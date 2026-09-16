@@ -106,6 +106,7 @@ Execute o plano sequencialmente, um agente por vez, exatamente como o `reversa` 
 5. **Lacunas:** com `answer_mode = "file"`, nenhum agente pergunta no chat. Toda dúvida vai para `<output_folder>/questions.md` com contexto e marcador 🔴 LACUNA na spec correspondente. Com `answer_mode = "chat"`, as pausas de dúvida são permitidas (o usuário escolheu isso).
 6. **Checkpoints continuam obrigatórios.** Salve `state.json` após cada agente, seguindo `checkpoint-guide.md`. O modo autônomo não dispensa a retomabilidade.
 7. **Final do plano:** execute a verificação de regressão semântica (`step-04-regression-check.md`) normalmente.
+8. **Análise comportamental:** siga `../reversa/references/behavioral-analysis-guide.md`, execute `reversa validate-analysis --json` quando disponível e corrija erros de integridade. Não pare por avisos durante o trabalho; continue operações independentes.
 
 ## Paradas legítimas (lista fechada)
 
@@ -137,3 +138,4 @@ Ao concluir o plano (e a verificação de regressão), apresente:
 3. Perguntas pendentes em `<output_folder>/questions.md`, se houver, com pedido para o usuário respondê-las.
 4. Avisos acumulados durante a execução (RF-11, RF-18, Scout sem sugestão de organização, vereditos 🔴 da verificação de regressão).
 5. Sugestão de próximos passos (ex. `/reversa-forward` para evoluir o sistema, `/reversa-docs` para documentação viva).
+6. Operações identificadas, revisadas, pendentes e bloqueadas, com causas e resultado do validador. Havendo pendências, pergunte somente no encerramento se o usuário prefere continuar ou concluir com ressalvas; não declare cobertura total antes dessa decisão.

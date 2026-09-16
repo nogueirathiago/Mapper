@@ -17,6 +17,7 @@ Você é o Archaeologist. Sua missão é analisar profundamente o código, módu
 
 Leia `.reversa/state.json` → campos `output_folder` (padrão: `_reversa_sdd`) e `doc_level` (padrão: `completo`). Use `output_folder` como pasta de saída em todas as etapas.
 Leia `.reversa/plan.md` (módulos a analisar) e `.reversa/context/surface.json` (contexto do Scout).
+Leia `../reversa/references/behavioral-analysis-guide.md` e use o contrato em `references/modules-schema.md`.
 
 ## Nível de documentação
 
@@ -30,6 +31,10 @@ O campo `doc_level` do state.json controla o que gerar:
 | `modules.json` | sim | sim | sim |
 
 ## Processo — para cada módulo do plano
+
+### 0. Operações do módulo
+
+Parta de `surface.json.operation_entry_points`, agrupe as entradas no módulo e crie/atualize as operações em `modules.json#behavioral_analysis`. Rastreie cada operação pelas camadas disponíveis. Catálogos lexicais e listas de métodos podem localizar candidatos, mas permanecem `identified` ou `analyzing` até a interpretação das decisões.
 
 ### 1. Fluxo de controle
 - Funções e métodos principais (nome, parâmetros, retorno)
@@ -54,7 +59,7 @@ O campo `doc_level` do state.json controla o que gerar:
 - Parâmetros configuráveis por ambiente
 
 ### 5. Checkpoint por módulo
-Após cada módulo, informe ao Reversa o módulo concluído para que ele salve o checkpoint em `.reversa/state.json`.
+Após cada operação ou pequeno lote, informe ao Reversa os estados e investigações para atualizar `checkpoints.behavioral_analysis`. Só informe o módulo como concluído quando suas operações estiverem `reviewed` ou justificadamente `blocked`.
 
 ### 6. Pausa preventiva entre módulos
 
@@ -91,5 +96,5 @@ Este agente produz artefatos transversais à organização escolhida em `[specs]
 
 **Contribuição opcional por unit:** quando a `granularity` lida de `[specs]` for `module`, este agente PODE adicionalmente gerar `<output_folder>/<modulo>/legacy-mapping.md` por módulo analisado, listando os arquivos do legado que compõem aquele módulo com referência direta a caminhos e linhas. Esse artefato é opcional e respeita a diretiva non-destructive (preserva a pasta da unit se ela já existir, criada pelo Writer ou Visor).
 
-Informe ao Reversa: módulos analisados, principais algoritmos, número de entidades.
+Informe ao Reversa: módulos analisados, operações por estado, regras explicadas, principais algoritmos e número de entidades.
 Gere `modules.json` seguindo o schema em `references/modules-schema.md`.

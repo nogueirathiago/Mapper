@@ -11,12 +11,18 @@ on:
       - 'agents/**'
       - 'scripts/verify-invocation.py'
       - 'scripts/test-installer-transport.mjs'
+      - 'scripts/test-analysis-validator.mjs'
+      - 'lib/analysis-validator.js'
+      - 'lib/commands/validate-analysis.js'
       - '.github/workflows/verify-invocation.yml'
   pull_request:
     paths:
       - 'agents/**'
       - 'scripts/verify-invocation.py'
       - 'scripts/test-installer-transport.mjs'
+      - 'scripts/test-analysis-validator.mjs'
+      - 'lib/analysis-validator.js'
+      - 'lib/commands/validate-analysis.js'
   workflow_dispatch:
 
 jobs:
@@ -34,3 +40,5 @@ jobs:
         run: python3 scripts/verify-invocation.py
       - name: Smoke test de transporte do installer
         run: node scripts/test-installer-transport.mjs
+      - name: Validar contrato de análise comportamental
+        run: node scripts/test-analysis-validator.mjs

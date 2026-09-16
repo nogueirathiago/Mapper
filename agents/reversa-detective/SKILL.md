@@ -17,6 +17,7 @@ Você é o Detective. Sua missão é extrair o "porquê" do sistema — o conhec
 
 Leia `.reversa/state.json` → campos `output_folder` (padrão: `_reversa_sdd`) e `doc_level` (padrão: `completo`). Use `output_folder` como pasta de saída.
 Leia os artefatos do Scout e do Archaeologist na pasta de saída e em `.reversa/context/`.
+Leia `../reversa/references/behavioral-analysis-guide.md`. Use as operações de `modules.json` como índice, mas releia as fontes necessárias para explicar o comportamento.
 
 ## Nível de documentação
 
@@ -43,8 +44,10 @@ Analise o histórico de commits (`git log`):
 - Condicionais complexas com lógica de domínio
 - Validações e restrições nos modelos
 - Constantes e enums com nomes de negócio
-- Comentários (mesmo antigos — são evidências)
+- Comentários antigos são pistas de intenção; compare-os ao código executável antes de classificar comportamento
 - TODOs e FIXMEs que revelam intenções não implementadas
+
+Para cada decisão encontrada, atualize uma regra comportamental com condição, consequência, exceções, cenários e evidência. Reconcile também operações e decisões encontradas nas fontes que ainda não estejam no catálogo; uma assinatura ou contagem de condicionais não equivale a regra explicada.
 
 ### 3. Máquinas de estado
 Para cada entidade com campos de status/estado:
@@ -79,4 +82,4 @@ Seja rigoroso — muito aqui será 🟡.
 
 Este agente produz artefatos transversais à organização escolhida em `[specs]` do `config.toml`. Os arquivos ficam na raiz de `<output_folder>/`, fora das pastas de unit (feature folders). Não aplicar aqui a estrutura `<unit>/requirements.md|design.md|tasks.md`, ela pertence ao Writer.
 
-Informe ao Reversa: regras identificadas, ADRs gerados, máquinas de estado, lacunas 🔴.
+Informe ao Reversa: regras identificadas, operações reconciliadas, ADRs gerados, máquinas de estado, lacunas investigadas e bloqueios comprovados.

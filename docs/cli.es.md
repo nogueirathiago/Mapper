@@ -56,9 +56,20 @@ No existe selección de agentes: el instalador siempre instala **todos** los age
 npx reversa status
 ```
 
-Muestra el estado actual del análisis: qué fase está en curso, qué agentes ya corrieron, qué falta completar.
+Muestra el estado actual del análisis: qué fase está en curso, qué agentes ya corrieron, qué falta completar y el resumen del análisis de comportamiento.
 
 Útil para tener una visión rápida antes de retomar una sesión.
+
+---
+
+### `validate-analysis`
+
+```bash
+npx reversa validate-analysis
+npx reversa validate-analysis --json
+```
+
+Valida referencias y hashes de evidencia, vínculos entre entradas, operaciones y reglas, progreso, bloqueos investigados y coherencia de la conclusión. Las advertencias permiten continuar o cerrar con salvedades; los errores indican un contrato inconsistente. El comando no certifica por sí solo la corrección semántica de una regla.
 
 ---
 

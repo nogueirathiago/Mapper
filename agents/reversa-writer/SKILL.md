@@ -22,6 +22,7 @@ Leia, nesta ordem:
 3. `.reversa/config.user.toml` → seção `[specs]` se existir, com precedência chave a chave sobre `config.toml`.
 4. `.reversa/context/surface.json` → especialmente `modules` e `organization_suggestion.features`.
 5. Demais artefatos em `<output_folder>/` e `.reversa/context/` (gerados por agentes anteriores).
+6. `../reversa/references/behavioral-analysis-guide.md` e `.reversa/context/modules.json#behavioral_analysis`.
 
 Se a seção `[specs]` ainda não está decidida (granularity vazia), pare e peça ao orquestrador Reversa para executar `references/step-03-specs-organization.md` antes de continuar.
 
@@ -84,6 +85,8 @@ Estes ficam na raiz de `<output_folder>/`, não dentro de feature folders:
 
 **Specs são contratos operacionais, não texto bonito.** Uma spec deve ser suficientemente detalhada para que um agente de IA, sem acesso ao código original, possa reimplementar a funcionalidade com fidelidade.
 
+Gere regras a partir das operações `reviewed`. Preserve operações `identified`, `analyzing` ou `blocked` como lacunas explícitas; nunca converta resumo automático, contagem de sinais ou lista de chamadas em regra implementada. Regras compartilhadas são descritas uma vez e referenciadas pelas units aplicáveis.
+
 ## Regra de execução obrigatória
 
 **Nunca gere tudo de uma vez.** Projetos grandes têm muitas units. Gerar tudo em uma única resposta consome contexto excessivo, reduz a qualidade e impede revisão incremental.
@@ -125,6 +128,7 @@ Para cada item do plano, em sequência:
 1. Informe: `"Gerando [N/total]: [caminho do arquivo]..."`
 2. Gere apenas aquele arquivo, baseando-se no template correspondente em `references/`.
 3. Se a pasta da unit ainda não existe, crie-a; se já existe (EC-05), preserve qualquer conteúdo presente e apenas adicione os arquivos faltantes. Nunca sobrescreva arquivos já existentes sem confirmação.
+   Com confirmação para atualizar uma spec, preserve trechos identificados como humanos e conteúdo cuja autoria não possa ser determinada; complemente a seção aplicável e registre a revisão, em vez de substituir silenciosamente o documento inteiro.
 4. Marque o item como concluído no plano.
 5. Salve o progresso em `.reversa/state.json` (campo `redator_progress`).
 6. Informe: `"✅ [arquivo] concluído. Próximo: [próximo item]. Digite CONTINUAR para prosseguir."`
@@ -147,7 +151,7 @@ Antes de oferecer a opção 2, confirme que `redator_progress` em `.reversa/stat
 
 Após todos os arquivos de unit, gere os globais aplicáveis na ordem: `openapi/`, `user-stories/`, `traceability/code-spec-matrix.md` por último.
 
-A code-spec matrix lista, por arquivo do legado, qual unit cobre o quê:
+A code-spec matrix continua listando, por arquivo do legado, qual unit cobre o quê:
 
 | Arquivo do legado | Unit correspondente | Cobertura |
 |---------|---------------------|-----------|
@@ -155,13 +159,15 @@ A code-spec matrix lista, por arquivo do legado, qual unit cobre o quê:
 
 Arquivos sem unit correspondente ficam com `n/a`, são candidatos a análise adicional.
 
+Essa matriz mede rastreabilidade documental, não completude comportamental. Acrescente uma seção por operação usando os IDs e estados de `modules.json`; não derive percentual semântico da quantidade de arquivos.
+
 ### Passo 4, Encerramento
 
 Ao concluir, informe ao Reversa:
 - Units geradas (quantidade)
 - Total de arquivos canônicos + opcionais
 - Globais gerados
-- % de cobertura estimada (arquivos do legado mapeados a alguma unit)
+- Arquivos rastreados e operações por estado, apresentados como métricas distintas
 
 ## Confiança em cada afirmação
 

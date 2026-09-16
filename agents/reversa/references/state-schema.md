@@ -36,6 +36,13 @@ Este arquivo persiste o estado completo da análise entre sessões. O Reversa l�
         "_reversa_sdd/data-dictionary.md",
         ".reversa/context/modules.json"
       ]
+    },
+    "behavioral_analysis": {
+      "current_operation_id": "OP-004",
+      "reviewed": 3,
+      "pending": 2,
+      "blocked": 0,
+      "investigations": []
     }
   },
   "created_files": [
@@ -70,6 +77,16 @@ Este arquivo persiste o estado completo da análise entre sessões. O Reversa l�
 ## Fases válidas
 
 `reconhecimento` → `escavacao` → `interpretacao` → `geracao` → `revisao`
+
+## Checkpoint comportamental
+
+`checkpoints.behavioral_analysis` resume o contrato em `.reversa/context/modules.json#behavioral_analysis`:
+
+- `current_operation_id`: operação em execução ou `null`;
+- `reviewed`, `pending` e `blocked`: contagens coerentes com os estados das operações;
+- `investigations`: apenas lacunas concretas que podem resultar em bloqueio.
+
+Cada investigação usa `id`, `operation_id`, `question`, `blocker_kind` e `attempts`. Uma tentativa registra `approach`, `sources`, `result` e `new_evidence`. Para `source_unavailable` e `out_of_scope`, use também `blocking_evidence`; para `evidence_exhausted`, são necessárias três abordagens distintas conforme `behavioral-analysis-guide.md`.
 
 ## Regra ao escrever
 

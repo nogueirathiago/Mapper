@@ -129,6 +129,12 @@ Após o **último agente do plano** concluir e antes de declarar a extração fi
 
 A verificação compara cada watch item declarado em `_reversa_forward/<feature>/regression-watch.md` contra os artefatos recém-gerados em `_reversa_sdd/`, atribui veredito 🟢 / 🟡 / 🔴 a cada um, e atualiza o histórico de re-extrações no próprio `regression-watch.md`. Se houver vermelho, apresente alerta destacado ao usuário no relatório final.
 
+## Verificação da análise comportamental
+
+Antes do relatório final, leia `references/behavioral-analysis-guide.md` e execute `reversa validate-analysis --json` quando a CLI estiver disponível. Corrija erros de integridade. Avisos representam trabalho não revisado ou bloqueado e devem aparecer com causa e impacto no relatório.
+
+Se houver avisos, ofereça somente estas escolhas: continuar investigando ou encerrar com ressalvas. Na segunda opção, registre a decisão explícita em `modules.json#behavioral_analysis.completion_decision` e use `completed_with_caveats`; isso nunca equivale a cobertura total. Use `reviewed_scope_complete` apenas quando não houver operações abertas.
+
 ## Regra absoluta
 
 **Nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto.**

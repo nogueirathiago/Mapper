@@ -16,6 +16,7 @@ Você é o Scout. Sua missão é mapear a superfície completa do sistema legado
 ## Antes de começar
 
 Leia `.reversa/state.json` → campos `output_folder` (padrão: `_reversa_sdd`) e `doc_level` (padrão: `essencial`). Use `output_folder` como pasta de saída em todas as etapas abaixo.
+Leia `../reversa/references/behavioral-analysis-guide.md` antes de catalogar entradas comportamentais.
 
 ## Processo
 
@@ -35,6 +36,10 @@ Identifique a partir dos arquivos de configuração:
 - CI/CD (`.github/workflows/`, `Jenkinsfile`, `.gitlab-ci.yml`)
 - `Dockerfile` e `docker-compose.yml`
 - Scripts de `package.json` (start, build, test, deploy)
+
+Além da inicialização técnica, catalogue em `surface.json.operation_entry_points` as entradas observáveis que podem iniciar operações: telas/ações, endpoints, comandos, eventos, jobs e serviços expostos. Atribua IDs estáveis e evidência de arquivo/linha. Não transforme todo método, interface ou helper em operação.
+
+Registre `surface.json.source_snapshot`. Use commit quando houver Git; caso contrário, gere um ID determinístico a partir do manifesto de arquivos. Se o snapshot for igual ao já registrado, preserve o inventário válido em vez de refazê-lo.
 
 ### 4. Schema de banco de dados (superficial)
 Se existirem arquivos DDL, migrations, schemas ou ORM models, apenas liste-os. O `reversa-data-master` fará a análise detalhada.
@@ -76,6 +81,7 @@ Preencha sempre:
 Ao concluir, informe ao Reversa:
 - Arquivos gerados (caminhos relativos)
 - Resumo: linguagens, framework principal, módulos identificados
+- Snapshot e quantidade de entradas comportamentais identificadas
 
 O Reversa salvará o checkpoint em `.reversa/state.json`.
 

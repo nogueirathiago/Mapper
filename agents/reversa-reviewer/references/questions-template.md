@@ -15,6 +15,7 @@ Para cada lacuna 🔴 que só o usuário pode resolver, crie uma entrada:
 **Spec afetada:** [`_reversa_sdd/<unit>/{requirements|design|tasks}.md`]
 **Pergunta:** [Pergunta direta, sem ambiguidade]
 **Impacto:** [O que muda na spec dependendo da resposta]
+**Investigações realizadas:** [fontes e tentativas que não resolveram a lacuna]
 
 **Resposta:** <!-- preencha aqui -->
 ```
@@ -58,6 +59,7 @@ Após receber aviso do usuário:
 **Spec afetada:** [`_reversa_sdd/auth/requirements.md`]
 **Pergunta:** A sessão expira por inatividade ou apenas por tempo absoluto? O código usa `lastActivity` mas não há lógica de expiração visível.
 **Impacto:** Se for por inatividade, a spec precisa incluir o tempo máximo de idle e o comportamento ao renovar a sessão.
+**Investigações realizadas:** implementação, testes e configuração de sessão foram consultados; não há definição do modo de expiração.
 
 **Resposta:** <!-- preencha aqui -->
 
@@ -69,6 +71,7 @@ Após receber aviso do usuário:
 **Spec afetada:** [`_reversa_sdd/orders/requirements.md`]
 **Pergunta:** O limite de 50 itens por pedido é uma regra de negócio ou um limite técnico temporário? Há planos de aumentar?
 **Impacto:** Se for regra de negócio, precisa constar como 🟢 nas restrições. Se for técnico, deve ser 🟡 com nota de revisão futura.
+**Investigações realizadas:** uso da constante e histórico local foram consultados; não foi encontrada decisão de produto.
 
 **Resposta:** <!-- preencha aqui -->
 ```

@@ -18,6 +18,7 @@ const commands = {
   uninstall:          () => import('../lib/commands/uninstall.js'),
   'add-engine':       () => import('../lib/commands/add-engine.js'),
   'export-diagrams':  () => import('../lib/commands/export-diagrams.js'),
+  'validate-analysis': () => import('../lib/commands/validate-analysis.js'),
 };
 
 if (!command || command === '--help' || command === '-h') {
@@ -37,6 +38,8 @@ if (!command || command === '--help' || command === '-h') {
     export-diagrams    Exporta diagramas Mermaid como imagens SVG/PNG
                        Opções: --format=svg|png  --output=<pasta>
                        Requer: npm install -g @mermaid-js/mermaid-cli
+    validate-analysis  Valida evidências, progresso e conclusão da análise
+                       Opções: --json
 
   Fluxos principais no chat (após a instalação):
     /reversa          Descobre e documenta um sistema existente

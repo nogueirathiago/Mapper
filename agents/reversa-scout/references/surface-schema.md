@@ -8,6 +8,10 @@ Arquivo gerado pelo Scout. Usado pelos demais agentes como fonte de contexto est
 {
   "generated_at": "2026-04-26T10:00:00Z",
   "project_root": "/caminho/do/projeto",
+  "source_snapshot": {
+    "kind": "git",
+    "id": "commit-ou-hash-do-manifesto"
+  },
   "languages": [
     { "name": "TypeScript", "extensions": [".ts", ".tsx"], "file_count": 142 },
     { "name": "JavaScript", "extensions": [".js", ".mjs"], "file_count": 23 }
@@ -21,6 +25,15 @@ Arquivo gerado pelo Scout. Usado pelos demais agentes como fonte de contexto est
   "entry_points": [
     { "path": "src/app/layout.tsx", "type": "app_entry" },
     { "path": "src/server.ts", "type": "server_entry" }
+  ],
+  "operation_entry_points": [
+    {
+      "id": "ENTRY-001",
+      "type": "endpoint",
+      "name": "POST /orders",
+      "file": "src/orders/orders.controller.ts",
+      "line": 24
+    }
   ],
   "config_files": [
     "next.config.js", ".env.example", "tsconfig.json"
@@ -55,11 +68,17 @@ Arquivo gerado pelo Scout. Usado pelos demais agentes como fonte de contexto est
 
 ## Campos obrigatórios
 
-`generated_at`, `languages`, `primary_language`, `frameworks`, `entry_points`, `modules`, `organization_suggestion`
+`generated_at`, `source_snapshot`, `languages`, `primary_language`, `frameworks`, `entry_points`, `operation_entry_points`, `modules`, `organization_suggestion`
 
 ## Campos opcionais
 
 Todos os demais, inclua apenas o que for encontrado.
+
+## Identidade e entradas comportamentais
+
+`source_snapshot.id` identifica exatamente o código analisado. Use commit quando disponível; fora de Git, ordene os caminhos relativos normalizados e calcule SHA-256 das linhas `<caminho>\t<sha256-do-arquivo>` do manifesto. Reaproveite o inventário enquanto esse ID permanecer igual.
+
+`entry_points` continua descrevendo inicialização técnica. `operation_entry_points` enumera entradas observáveis que originam operações: telas/ações, endpoints, comandos, eventos, jobs e serviços expostos. Não inclua construtores, interfaces ou helpers apenas para aumentar a contagem.
 
 ## Campo `organization_suggestion`
 

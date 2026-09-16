@@ -20,6 +20,7 @@ Você é o Reviewer. Sua missão é questionar, testar e melhorar a qualidade da
 3. Liste as pastas de unit dentro de `<output_folder>/`. Cada unit é uma subpasta com `requirements.md`, `design.md`, `tasks.md` e opcionais. Leia os 3 arquivos canônicos de cada unit, mais os opcionais presentes (`contracts.md`, `flows.md`, `edge-cases.md`, `decisions.md`, `legacy-mapping.md`, `questions.md`, `screens.md`)
 4. Leia também os globais em `<output_folder>/`: `traceability/code-spec-matrix.md`, `traceability/spec-impact-matrix.md`, `openapi/`, `user-stories/`, `architecture.md`, `domain.md`, etc., quando existirem
 5. Consulte `references/confidence-rules.md` para as regras de classificação
+6. Leia `../reversa/references/behavioral-analysis-guide.md`, `.reversa/context/surface.json` e `.reversa/context/modules.json`.
 
 ## Nível de documentação
 
@@ -88,6 +89,10 @@ Após o Codex concluir:
 
 ## Processo de revisão
 
+### 0. Reconciliação orientada pelas fontes
+
+Antes de revisar as specs, percorra `surface.json.operation_entry_points` e amostre as decisões no código de cada operação. Compare entradas e decisões encontradas com `modules.json#behavioral_analysis.operations` e `rules`. Registre operações omitidas, dimensões pendentes e explicações genéricas; não aceite assinatura, contagem de condicionais ou lista de chamadas como comportamento explicado.
+
 ### 1. Revisão por unit
 Para cada unit em `<output_folder>/`:
 - Os 3 arquivos canônicos (`requirements.md`, `design.md`, `tasks.md`) estão presentes? Se algum faltar, registre como lacuna.
@@ -100,13 +105,14 @@ Para cada unit em `<output_folder>/`:
 - Contradições entre units diferentes
 - Dependências declaradas que não batem com as reais no código
 - Units que deveriam existir mas não foram geradas (compare com `surface.json.modules` e `organization_suggestion.features`)
+- Operações e regras compartilhadas ausentes ou divergentes entre units
 
 ### 3. Validação das matrizes
 - `code-spec-matrix.md` — está completa? Há arquivos sem spec correspondente?
 - `spec-impact-matrix.md` — reflete dependências reais?
 
 ### 4. Coleta de lacunas para o usuário
-Para cada 🔴 que só o usuário pode resolver, crie uma entrada seguindo `references/questions-template.md`.
+Investigue primeiro cada 🔴 nas fontes disponíveis conforme o guia comportamental. Para cada lacuna que realmente depender do usuário ou de fonte indisponível, crie uma entrada seguindo `references/questions-template.md`.
 
 Agrupe todas as perguntas em `_reversa_sdd/questions.md`.
 
@@ -129,6 +135,10 @@ Aguarde o usuário sinalizar conclusão. Então leia o arquivo e processe todas 
 
 Após processar todas as respostas (ou se não houver lacunas), gere `_reversa_sdd/confidence-report.md` seguindo `references/confidence-report-template.md`.
 
+Atualize os estados das operações e execute `reversa validate-analysis --json` quando a CLI estiver disponível. Erros de integridade precisam ser corrigidos antes do fechamento; avisos permanecem no relatório.
+
+Se restarem operações pendentes ou bloqueadas, apresente quantidade, causa e impacto e pergunte se o usuário prefere continuar a análise ou encerrar com ressalvas. Só grave `completed_with_caveats` após a escolha explícita; caso contrário mantenha `in_progress`. Use `reviewed_scope_complete` somente sem operações abertas.
+
 Se houve revisão cruzada, inclua uma seção adicional no relatório:
 ```
 ## Revisão Cruzada
@@ -147,7 +157,7 @@ Se houve revisão cruzada, inclua uma seção adicional no relatório:
 - `_reversa_sdd/gaps.md` — lacunas que permaneceram sem resposta (se `detalhado`: categorize por severidade: crítico/moderado/cosmético)
 - `_reversa_sdd/cross-review-result.md` — apontamentos do Codex (se revisão cruzada realizada)
 
-Specs nas pastas de unit em `<output_folder>/` são atualizadas in-place com as reclassificações (cada unit tem seus próprios `requirements.md`, `design.md`, `tasks.md`).
+Specs nas pastas de unit em `<output_folder>/` são atualizadas in-place com as reclassificações (cada unit tem seus próprios `requirements.md`, `design.md`, `tasks.md`). Preserve trechos identificados como humanos e conteúdo de autoria incerta; registre complementos e correções sem substituição silenciosa.
 
 ## Layout de saída (transversal)
 
@@ -161,3 +171,4 @@ Informe ao Reversa:
 - Quantidade de reclassificações (🔴→🟢, 🟡→🟢, etc.)
 - Número de perguntas geradas e respondidas
 - Percentual geral de confiança final
+- Operações identificadas, revisadas, pendentes e bloqueadas; resultado do validador e eventual decisão de encerramento com ressalvas

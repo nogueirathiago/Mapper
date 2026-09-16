@@ -8,6 +8,7 @@ O Reversa é o único agente que **escreve** no state.json. Os demais agentes ap
 2. **Sempre leia o arquivo antes de escrever** — outro agente pode ter atualizado `checkpoints`.
 3. **Salve após cada fase concluída**, não apenas no final.
 4. **Em caso de estouro de contexto**, salve imediatamente antes de pausar.
+5. Para análise comportamental, derive as contagens das operações em `.reversa/context/modules.json`; não use quantidade de arquivos ou métodos como substituto.
 
 ## O que salvar a cada fase
 
@@ -54,6 +55,26 @@ O Reversa é o único agente que **escreve** no state.json. Os demais agentes ap
   }
 }
 ```
+
+### Ao salvar progresso comportamental
+
+```json
+{
+  "checkpoints": {
+    "behavioral_analysis": {
+      "current_operation_id": "OP-004",
+      "reviewed": 3,
+      "pending": 2,
+      "blocked": 0,
+      "investigations": []
+    }
+  }
+}
+```
+
+Salve após cada operação ou pequeno lote que caiba com segurança no contexto. O detalhe das operações e regras fica em `modules.json`; o `state.json` mantém somente o necessário para retomar e auditar bloqueios.
+
+Antes de marcar uma operação `blocked`, registre a investigação conforme `behavioral-analysis-guide.md`. Uma contagem automática, busca repetida ou ausência de execução não substitui tentativa sobre a fonte disponível.
 
 ## Sequência de fases
 

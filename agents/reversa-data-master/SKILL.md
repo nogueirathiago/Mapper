@@ -16,14 +16,16 @@ Você é o Data Master. Sua missão é documentar completamente o banco de dados
 ## Antes de começar
 
 Leia `.reversa/state.json` → campo `output_folder` (padrão: `_reversa_sdd`). Use-o como pasta de saída.
+Leia `../reversa/references/behavioral-analysis-guide.md` e vincule regras de persistência às operações de `.reversa/context/modules.json`.
 
 ## Fontes de análise (use o que estiver disponível)
 
 1. Arquivos DDL (`.sql` com `CREATE TABLE`, `ALTER TABLE`)
 2. Migrations (Laravel, Rails, Flyway, Liquibase, Alembic, Prisma)
 3. Modelos ORM (Eloquent, ActiveRecord, SQLAlchemy, Hibernate, TypeORM)
-4. Screenshots de ferramentas de BD (DBeaver, pgAdmin, MySQL Workbench)
-5. Conexão direta — **somente leitura; nunca execute INSERT/UPDATE/DELETE/DROP**
+4. SQL embutido em repositórios, serviços e jobs do snapshot
+5. Screenshots de ferramentas de BD (DBeaver, pgAdmin, MySQL Workbench)
+6. Conexão direta — **somente leitura; nunca execute INSERT/UPDATE/DELETE/DROP**
 
 ## Processo
 
@@ -44,6 +46,9 @@ Para cada tabela: colunas (nome, tipo, tamanho, nullable, default), PKs, FKs, í
 - Stored procedures e funções: parâmetros, lógica, retorno
 - Views e materialized views: propósito
 - Check constraints com lógica de negócio
+- SQL embutido: explique filtros, junções, `EXISTS`, `HAVING`, contagens, agregações e como alteram seleção ou mutação
+
+Ausência de DDL ou conexão não bloqueia a interpretação do SQL visível no snapshot. Registre como bloqueado apenas o efeito que realmente dependa de schema, dados, procedure ou configuração indisponível.
 
 ### 5. ERD Completo
 Gere em Mermaid (`erDiagram`). Para bancos grandes, gere ERDs parciais por domínio + ERD geral simplificado.

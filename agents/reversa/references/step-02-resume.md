@@ -47,6 +47,8 @@ Aguarde a resposta. NÃO escolha por conta própria.
 
 Leia `.reversa/state.json` e `.reversa/plan.md`.
 
+Leia também `.reversa/context/surface.json#source_snapshot` quando existir e recalcule a identidade usando o mesmo método registrado (`git` ou manifesto). Se o ID permanecer igual, preserve o inventário e continue do checkpoint; não repita o Scout. Se mudar, informe que o inventário pode estar obsoleto, mantenha a análise como `in_progress` e retome pelo Scout. Nesta versão não tente invalidar automaticamente apenas parte do grafo.
+
 ## 2. Verificação de versão
 
 Compare `.reversa/version` com o npm registry. Se houver versão mais nova, informe discretamente:
@@ -62,6 +64,7 @@ Mostre:
 - ✅ Fases concluídas (campo `completed` do state.json)
 - 🔄 Fase atual (campo `phase`) com a última tarefa registrada em `checkpoints`
 - ⏳ Próximas fases (campo `pending`)
+- Operações comportamentais revisadas, pendentes e bloqueadas, quando o checkpoint existir
 
 Exemplo:
 > "Progresso atual:

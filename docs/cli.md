@@ -56,9 +56,20 @@ There is no agent selection: the installer always installs **all** agents shippe
 npx reversa status
 ```
 
-Shows the current analysis state: which phase is in progress, which agents have already run, what's left to complete.
+Shows the current analysis state: which phase is in progress, which agents have already run, what's left to complete, and the behavioral analysis summary.
 
 Useful for a quick overview before resuming a session.
+
+---
+
+### `validate-analysis`
+
+```bash
+npx reversa validate-analysis
+npx reversa validate-analysis --json
+```
+
+Validates evidence references and hashes, links between entry points, operations and rules, progress, investigated blockers, and completion consistency. Warnings allow continued work or completion with caveats; errors mean the contract is inconsistent. The command does not certify the semantic correctness of a rule by itself.
 
 ---
 

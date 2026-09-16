@@ -33,6 +33,12 @@ try {
     'policy.allow_implicit_invocation atravessou no agents/openai.yaml instalado');
   check(/display_name:/.test(yaml),
     'interface.display_name presente no openai.yaml instalado');
+
+  const reversaDest = join(tmp, 'reversa');
+  cpSync(join(ROOT, 'agents', 'reversa'), reversaDest, { recursive: true });
+  const behavioralGuide = readFileSync(join(reversaDest, 'references', 'behavioral-analysis-guide.md'), 'utf8');
+  check(/Guia de análise comportamental/.test(behavioralGuide),
+    'método comportamental compartilhado atravessou para a instalação');
 } finally {
   rmSync(tmp, { recursive: true, force: true });
 }

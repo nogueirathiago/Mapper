@@ -24,6 +24,14 @@ Gerado pelo Revisor ao final da revisão.
 
 **Confiança geral:** [X%] (soma de 🟢 + metade dos 🟡)
 
+> Este percentual resume a classificação das afirmações documentadas. Não mede cobertura das operações nem garante correção semântica.
+
+## Cobertura comportamental
+
+| Identificadas | Revisadas | Pendentes | Bloqueadas | Conclusão |
+|---:|---:|---:|---:|---|
+| [N] | [N] | [N] | [N] | `in_progress` / `completed_with_caveats` / `reviewed_scope_complete` |
+
 ---
 
 ## Por Spec

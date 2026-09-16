@@ -10,9 +10,19 @@
 - [Responsabilidade 2]
 
 ## Regras de Negócio
-- [Regra 1] 🟢
-- [Regra 2] 🟡
-- [Comportamento desconhecido] 🔴
+
+### [RULE-001] [Nome da regra] 🟢
+
+- **Operações:** [OP-001]
+- **Condição:** [condição concreta]
+- **Consequência:** [resultado observável]
+- **Exceções/variações:** [exceções, ou "nenhuma encontrada"]
+- **Permitido:** [cenário concreto]
+- **Bloqueado:** [cenário concreto]
+- **Implementação:** [implemented | inferred | presumed_intent | unknown]
+- **Evidência:** `caminho/arquivo.ext:linha-inicial-linha-final` (`sha256:...`)
+
+Não use contagem de condicionais, assinatura ou lista de chamadas como explicação. Comportamentos desconhecidos permanecem lacunas vinculadas à operação correspondente.
 
 ## Requisitos Funcionais
 

@@ -15,7 +15,7 @@ Use esta escala em **toda** afirmação nas specs. Sem exceções.
 ### 🟢 CONFIRMADO
 - O comportamento está explícito no código (if/else, return, throw)
 - O valor é uma constante ou enum definido no código
-- A regra está em um comentário descritivo junto ao código relevante
+- Um comentário só confirma intenção declarada; comportamento exige código executável ou teste correspondente
 - Existe um teste automatizado que cobre exatamente esse comportamento
 - A DDL/migration define a constraint diretamente
 

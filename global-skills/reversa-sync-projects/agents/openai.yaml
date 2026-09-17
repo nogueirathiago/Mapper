@@ -1,0 +1,7 @@
+interface:
+  display_name: "Sincronizar projetos Reversa"
+  short_description: "Atualiza projetos registrados usando o fork"
+  default_prompt: "Use $reversa-sync-projects para sincronizar os projetos registrados com a main validada do fork."
+policy:
+  allow_implicit_invocation: false
+

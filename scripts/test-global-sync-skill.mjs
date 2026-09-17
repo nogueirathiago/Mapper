@@ -41,15 +41,16 @@ try {
   rmSync(second.discoveryLink);
   mkdirSync(second.discoveryLink, { recursive: true });
   writeFileSync(join(second.discoveryLink, 'keep.txt'), 'keep', 'utf8');
+  createSource(sourceRoot, 'third');
   assert.throws(
     () => installGlobalSyncSkill({ sourceRoot, forkPath: sourceRoot, policy, codexSkillsRoot }),
     /contém dados reais e foi preservado/,
   );
   assert.equal(readFileSync(join(second.discoveryLink, 'keep.txt'), 'utf8'), 'keep');
+  assert.equal(readFileSync(join(second.activeSkill, 'SKILL.md'), 'utf8').includes('second'), true);
   assert.equal(existsSync(join(root, 'fake-home', '.codex', 'skills', 'other-file')), false);
 } finally {
   rmSync(root, { recursive: true, force: true });
 }
 
 console.log('RESULTADO: ✓ skill global instalada por link simbólico seguro');
-

@@ -17,6 +17,7 @@ O usuário quer iniciar a sincronização sob demanda, por uma skill explícita,
 - Atualizar arquivos gerenciados pelo Reversa sem remapear o legado.
 - Preservar arquivos que tenham sido modificados localmente e relatar as divergências.
 - Isolar falhas por projeto e apresentar um resultado verificável da execução.
+- Manter o fork, os projetos e todos os dados operacionais da sincronização no volume `NEO MATRIX`, sem armazenar esse conteúdo no SSD interno do Mac.
 
 ## Não objetivos
 
@@ -32,15 +33,32 @@ O usuário quer iniciar a sincronização sob demanda, por uma skill explícita,
 
 ### 1. Skill global explícita
 
-A fonte versionada da skill ficará em `global-skills/reversa-sync-projects/` no fork e sua instalação global ficará em `~/.codex/skills/reversa-sync-projects`. A política de invocação será explícita (`allow_implicit_invocation: false`), pois a operação altera vários projetos.
+A fonte versionada da skill ficará em `global-skills/reversa-sync-projects/` no fork, dentro do volume `NEO MATRIX`. A instalação manterá a cópia ativa em `/Volumes/NEO MATRIX/Projetos/Documents/Codex/.reversa-global/skill/reversa-sync-projects` e criará `~/.codex/skills/reversa-sync-projects` somente como link simbólico para ela. Essa é a única entrada permitida no SSD interno; nenhum arquivo de conteúdo da skill será copiado para lá. A política de invocação será explícita (`allow_implicit_invocation: false`), pois a operação altera vários projetos.
 
 A skill será uma camada fina: ela localizará o checkout configurado do fork e acionará diretamente o comando determinístico de sincronização desse checkout. As regras de cópia, preservação e atualização de manifestos permanecerão no core do Reversa, em vez de serem duplicadas em instruções da skill ou dependerem da CLI pública instalada globalmente.
 
-A instalação inicial da skill gravará `~/.config/reversa/sync.json` com a localização absoluta do repositório do fork, o remoto `origin` e a branch `main`. Se o checkout for movido ou a configuração ficar inválida, a execução falhará antes de alterar projetos e informará que a skill deve ser reinstalada a partir do novo local.
+A instalação inicial da skill gravará a configuração no diretório operacional `/Volumes/NEO MATRIX/Projetos/Documents/Codex/.reversa-global/`. O arquivo `config/sync.json` conterá a localização absoluta do repositório do fork, o remoto `origin` e a branch `main`. Se o checkout for movido, estiver fora de `/Volumes/NEO MATRIX/` ou a configuração ficar inválida, a execução falhará antes de alterar projetos e informará que a skill deve ser reinstalada a partir do novo local.
 
-### 2. Registro global de projetos
+### 2. Política de armazenamento
 
-O registro ficará em `~/.config/reversa/projects.json` com formato mínimo e versionado:
+Todo conteúdo real usado ou produzido por esse fluxo deverá permanecer sob `/Volumes/NEO MATRIX/`:
+
+- checkout do fork;
+- projetos registrados;
+- configuração e registro globais do sincronizador;
+- áreas de preparação e arquivos temporários;
+- cache npm usado para validar o fork;
+- código e metadados da skill global.
+
+O diretório operacional padrão será `/Volumes/NEO MATRIX/Projetos/Documents/Codex/.reversa-global/`, organizado em `config/`, `skill/`, `tmp/` e `cache/`. A execução definirá caminhos próprios nesse diretório para não recorrer a `/tmp`, `TMPDIR`, `~/.npm` ou outras áreas do SSD interno.
+
+Antes de registrar ou sincronizar um caminho, o fluxo resolverá seu caminho físico e confirmará que ele pertence a `/Volumes/NEO MATRIX/`. Caminhos no SSD interno, inclusive por meio de links simbólicos que apontem para fora do volume, serão recusados sem alteração. Se o volume estiver desmontado, a execução falhará de forma segura.
+
+A única exceção é o link simbólico `~/.codex/skills/reversa-sync-projects`, necessário para descoberta da skill pelo Codex. O destino e todo o conteúdo desse link permanecerão no volume `NEO MATRIX`.
+
+### 3. Registro global de projetos
+
+O registro ficará em `/Volumes/NEO MATRIX/Projetos/Documents/Codex/.reversa-global/config/projects.json` com formato mínimo e versionado:
 
 ```json
 {
@@ -60,7 +78,7 @@ O registro será idempotente e ocorrerá em dois pontos:
 
 O segundo ponto cobre projetos antigos e instalações copiadas sem exigir cadastro manual.
 
-### 3. Fonte do fork
+### 4. Fonte do fork
 
 A sincronização usará exclusivamente `origin/main` do fork configurado. Ela não trocará a branch nem modificará o worktree de desenvolvimento atual.
 
@@ -68,7 +86,7 @@ O fluxo buscará a referência remota, materializará o commit de `origin/main` 
 
 Se o fetch falhar, `origin/main` não existir ou a validação do fork falhar, a execução será encerrada antes de qualquer projeto ser alterado.
 
-### 4. Planejamento e confirmação
+### 5. Planejamento e confirmação
 
 Antes das escritas, o comando examinará todos os projetos registrados e apresentará um único plano contendo:
 
@@ -78,7 +96,7 @@ Antes das escritas, o comando examinará todos os projetos registrados e apresen
 
 Após o plano, haverá uma única confirmação para sincronizar os projetos elegíveis. Cancelar não produzirá alterações.
 
-### 5. Regra de atualização
+### 6. Regra de atualização
 
 Para cada projeto elegível, a sincronização reutilizará o manifesto e o estado do instalador:
 
@@ -106,6 +124,8 @@ Uma falha em um projeto será registrada e a execução continuará nos demais. 
 
 - Registro ausente: criar com `version: 1` e lista vazia antes do primeiro cadastro.
 - JSON inválido ou versão desconhecida: falhar de forma segura e não reescrever o arquivo silenciosamente.
+- Volume `NEO MATRIX` desmontado: abortar antes de criar temporários, consultar a fonte ou alterar projetos.
+- Fork ou projeto fora de `/Volumes/NEO MATRIX/`: recusar o caminho e não registrá-lo nem sincronizá-lo.
 - Projeto inacessível: ignorar naquela execução, manter no registro e relatar.
 - Projeto sem `.reversa/state.json`: não alterar e relatar como instalação não reconhecida.
 - Manifesto ausente ou inválido: não presumir que arquivos são seguros para sobrescrita; preservar e relatar a necessidade de reparo.
@@ -119,6 +139,9 @@ A implementação deverá cobrir, em diretórios temporários:
 
 - criação e leitura do registro global;
 - normalização e deduplicação de caminhos;
+- rejeição do fork e de projetos cujo caminho físico esteja fora de `/Volumes/NEO MATRIX/`;
+- uso de temporários e cache npm somente no diretório operacional do volume externo;
+- funcionamento do link global sem cópia de conteúdo para `~/.codex/skills`;
 - registro automático por instalação e por ativação;
 - projeto inacessível ou sem instalação reconhecida;
 - classificação de arquivo intacto, ausente e modificado;
@@ -135,6 +158,9 @@ Também deverão passar os verificadores já existentes do pacote (`npm run veri
 ## Critérios de aceite
 
 - `$reversa-sync-projects` só é invocada explicitamente.
+- O checkout do fork, todos os projetos registrados e todos os dados operacionais ficam em `/Volumes/NEO MATRIX/`.
+- No SSD interno existe somente o link simbólico necessário em `~/.codex/skills/reversa-sync-projects`; seu destino está no volume externo.
+- Temporários e cache npm da sincronização não usam o SSD interno.
 - Projetos novos entram no registro sem edição manual da lista.
 - A origem aplicada é identificada pelo commit de `origin/main` do fork.
 - Cada projeto sincronizado registra o commit do fork efetivamente aplicado.

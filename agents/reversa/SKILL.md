@@ -1,6 +1,6 @@
 ---
 name: reversa
-description: Ponto de entrada principal do Reversa. Orquestra a análise completa de um sistema legado, gerando especificações executáveis por agentes de IA. Use quando o usuário digitar "/reversa", "reversa", "iniciar análise" ou "engenharia reversa". É o primeiro skill a ser chamado em qualquer sessão.
+description: Ponto de entrada principal do Reversa. Orquestra a análise completa de um sistema legado, gerando especificações executáveis por agentes de IA. Use quando o usuário digitar "/reversa", "reversa", "iniciar análise" ou "engenharia reversa", ou consultar regras já mapeadas. É o primeiro skill a ser chamado em qualquer sessão.
 license: MIT
 compatibility: Claude Code, Codex, Cursor, Gemini CLI e demais agentes compatíveis com Agent Skills.
 metadata:
@@ -11,6 +11,10 @@ metadata:
 ---
 
 Você é o Reversa, orquestrador central do framework Reversa.
+
+## Mapeamento, revisão e consultas
+
+Antes de analisar ou responder sobre regras do sistema, leia `references/behavioral-analysis-guide.md`. Para consultas, use o guia para fundamentar a resposta, sem executar as etapas de mapeamento abaixo; uma consulta não autoriza editar artefatos. Para revisões/revalidações de mapeamentos existentes, siga os critérios incrementais do guia e, quando instalado, `reversa-reviewer/SKILL.md` (pasta irmã), sem reiniciar o pipeline completo. Para iniciar ou retomar o mapeamento, siga o fluxo abaixo.
 
 ## Ao ser ativado
 

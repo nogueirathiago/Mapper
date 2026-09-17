@@ -19,6 +19,8 @@ const commands = {
   'add-engine':       () => import('../lib/commands/add-engine.js'),
   'export-diagrams':  () => import('../lib/commands/export-diagrams.js'),
   'validate-analysis': () => import('../lib/commands/validate-analysis.js'),
+  'register-project':  () => import('../lib/commands/register-project.js'),
+  'sync-projects':     () => import('../lib/commands/sync-projects.js'),
 };
 
 if (!command || command === '--help' || command === '-h') {
@@ -40,6 +42,8 @@ if (!command || command === '--help' || command === '-h') {
                        Requer: npm install -g @mermaid-js/mermaid-cli
     validate-analysis  Valida evidências, progresso e conclusão da análise
                        Opções: --json
+    register-project   Registra o projeto atual para sincronização pelo fork
+    sync-projects      Sincroniza projetos registrados com origin/main do fork
 
   Fluxos principais no chat (após a instalação):
     /reversa          Descobre e documenta um sistema existente

@@ -18,9 +18,11 @@ Antes de analisar ou responder sobre regras do sistema, leia `references/behavio
 
 ## Ao ser ativado
 
-1. Leia `.reversa/state.json`
-2. Se o arquivo não existir ou `phase` for `null`: leia e siga `references/step-01-first-run.md`
-3. Se `phase` estiver definida: leia e siga `references/step-02-resume.md`
+1. Resolva o caminho físico da raiz do projeto. Se não estiver sob `/Volumes/NEO MATRIX/`, interrompa antes de mapear e oriente o usuário a mover o projeto para esse dispositivo.
+2. Se `.reversa/state.json` existir e o helper `/Volumes/NEO MATRIX/Projetos/Documents/Codex/.reversa-global/skill/reversa-sync-projects/scripts/register-current-project.mjs` estiver instalado, execute-o com Node.js a partir da raiz do projeto. O registro é idempotente; uma falha deve ser informada e impede continuar até que o cadastro esteja íntegro.
+3. Leia `.reversa/state.json`.
+4. Se o arquivo não existir ou `phase` for `null`: leia e siga `references/step-01-first-run.md`.
+5. Se `phase` estiver definida: leia e siga `references/step-02-resume.md`.
 
 ## Desvio de convergência (antes de re-extrair)
 

@@ -73,6 +73,17 @@ Valida referencias y hashes de evidencia, vínculos entre entradas, operaciones 
 
 ---
 
+### `scan-surface`
+
+```bash
+npx reversa scan-surface
+npx reversa scan-surface --source=<ruta-relativa> --json
+```
+
+Descubre acciones ASP.NET MVC y flujos Razor/JavaScript y escribe `.reversa/context/surface-candidates.json`. `/reversa` ejecuta el comando automáticamente antes del Scout, sin hacer otra pregunta; el uso manual sirve solo para diagnóstico o reejecución. `--source` reemplaza la raíz relativa configurada, y `--json` imprime solo el resumen operativo. El código de salida `0` indica un scan completado, incluso con candidatos no resueltos; `1` indica un fallo fatal de configuración, acceso o escritura.
+
+---
+
 ### `update`
 
 ```bash

@@ -40,6 +40,16 @@ Na opção 1, leia `reversa-sync/SKILL.md` (pasta irmã, no mesmo diretório de 
 
 Execute as tarefas do plano **sequencialmente, uma por vez**:
 
+### Pré-descoberta obrigatória antes do Scout
+
+Imediatamente antes de ativar ou reativar o Scout, execute `reversa scan-surface --json`
+na raiz do projeto. Não apresente uma nova pergunta ao usuário. O comando resolve
+`source_root` pela configuração existente. Se o snapshot atual já corresponder ao
+artefato válido, o resultado é idempotente; se houver mudança, ele substitui o
+artefato atomicamente. Falha fatal interrompe o Scout e deve ser relatada. Candidatos
+`unresolved` não interrompem o scan: o Scout os classifica como `pending` quando a
+evidência continuar insuficiente.
+
 1. Informe o usuário: "Iniciando o **[Nome do Agente]** — [o que ele fará]."
 2. Leia `reversa-[agente]/SKILL.md` correspondente (pasta irmã, no mesmo diretório de skills) na íntegra e execute as instruções no contexto atual.
 3. Após conclusão: salve checkpoint em `.reversa/state.json` seguindo `references/checkpoint-guide.md` e marque a tarefa com ✅ em `.reversa/plan.md`.

@@ -35,6 +35,28 @@ Arquivo gerado pelo Scout. Usado pelos demais agentes como fonte de contexto est
       "line": 24
     }
   ],
+  "surface_discovery": {
+    "schema_version": 1,
+    "scan_snapshot_id": "sha256-do-manifesto",
+    "candidate_resolutions": [
+      {
+        "candidate_id": "CAND-UI-A1B2C3",
+        "disposition": "promoted",
+        "entry_point_id": "ENTRY-001",
+        "reason": "O controle inicia uma operação observável."
+      },
+      {
+        "candidate_id": "CAND-UI-D4E5F6",
+        "disposition": "auxiliary",
+        "reason": "O controle apenas fecha um painel visual da operação."
+      },
+      {
+        "candidate_id": "CAND-UI-G7H8I9",
+        "disposition": "pending",
+        "reason": "O destino é dinâmico e a evidência atual não permite classificá-lo."
+      }
+    ]
+  },
   "config_files": [
     "next.config.js", ".env.example", "tsconfig.json"
   ],
@@ -76,9 +98,28 @@ Todos os demais, inclua apenas o que for encontrado.
 
 ## Identidade e entradas comportamentais
 
-`source_snapshot.id` identifica exatamente o código analisado. Use commit quando disponível; fora de Git, ordene os caminhos relativos normalizados e calcule SHA-256 das linhas `<caminho>\t<sha256-do-arquivo>` do manifesto. Reaproveite o inventário enquanto esse ID permanecer igual.
+`source_snapshot.id` identifica exatamente o código analisado e deve ser igual a `surface-candidates.json.source_snapshot.id`. Os caminhos de `operation_entry_points` e evidências são relativos a `surface-candidates.json.source_root`. Reaproveite o inventário enquanto esse ID permanecer igual.
 
 `entry_points` continua descrevendo inicialização técnica. `operation_entry_points` enumera entradas observáveis que originam operações: telas/ações, endpoints, comandos, eventos, jobs e serviços expostos. Não inclua construtores, interfaces ou helpers apenas para aumentar a contagem.
+
+## Campo `surface_discovery`
+
+`surface_discovery` registra a classificação semântica feita pelo Scout sobre os fatos sintáticos de `.reversa/context/surface-candidates.json`:
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `schema_version` | integer | sim | Versão `1` deste contrato. |
+| `scan_snapshot_id` | string | sim | Mesmo ID de `surface-candidates.json.source_snapshot.id`. |
+| `candidate_resolutions` | array | sim | Exatamente uma resolução para cada candidato do scan atual. |
+
+Cada resolução contém `candidate_id`, `disposition` e `reason`. `disposition` aceita somente:
+
+- `promoted`: representa efeito funcional observável; exige `entry_point_id` existente e vinculado a uma operação;
+- `auxiliary`: participa da interface sem ser operação autônoma; exige justificativa;
+- `excluded`: não representa comportamento funcional; exige justificativa;
+- `pending`: a evidência é insuficiente; permanece lacuna e bloqueia cobertura total.
+
+Uma resolução cujo candidato não existe no scan atual é obsoleta. O Scout não apaga silenciosamente candidatos não resolvidos, não inventa destinos e não usa a organização das specs para reduzir a cobertura.
 
 ## Campo `organization_suggestion`
 

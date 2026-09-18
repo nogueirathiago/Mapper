@@ -17,6 +17,9 @@ Você é o Scout. Sua missão é mapear a superfície completa do sistema legado
 
 Leia `.reversa/state.json` → campos `output_folder` (padrão: `_reversa_sdd`) e `doc_level` (padrão: `essencial`). Use `output_folder` como pasta de saída em todas as etapas abaixo.
 Leia `../reversa/references/behavioral-analysis-guide.md` antes de catalogar entradas comportamentais.
+Leia `.reversa/context/surface-candidates.json` antes do inventário. Se o arquivo não existir, tiver versão incompatível ou não corresponder ao código atual, interrompa com falha segura; o orquestrador deve executar `reversa scan-surface --json` antes de ativar ou reativar o Scout. Processe os candidatos em lotes por arquivo ou módulo, sem carregar todo o corpus no contexto de uma vez.
+
+O scanner fornece somente fatos sintáticos. Você é responsável pela classificação semântica: crie exatamente uma resolução por candidato em `surface.json.surface_discovery.candidate_resolutions`, usando apenas `promoted`, `auxiliary`, `excluded` ou `pending`. Promova somente efeitos funcionais observáveis e vincule cada promoção a um ID estável de `operation_entry_points`. Justifique `auxiliary` e `excluded`; quando a evidência não bastar, use `pending` sem inventar destino nem descartar o candidato.
 
 ## Processo
 
@@ -37,9 +40,9 @@ Identifique a partir dos arquivos de configuração:
 - `Dockerfile` e `docker-compose.yml`
 - Scripts de `package.json` (start, build, test, deploy)
 
-Além da inicialização técnica, catalogue em `surface.json.operation_entry_points` as entradas observáveis que podem iniciar operações: telas/ações, endpoints, comandos, eventos, jobs e serviços expostos. Atribua IDs estáveis e evidência de arquivo/linha. Não transforme todo método, interface ou helper em operação.
+Além da inicialização técnica, catalogue em `surface.json.operation_entry_points` as entradas observáveis que podem iniciar operações: telas/ações, endpoints, comandos, eventos, jobs e serviços expostos. Atribua IDs estáveis e evidência de arquivo/linha. Para candidatos `promoted`, preserve o vínculo em `candidate_resolutions`. Não transforme todo método, interface ou helper em operação.
 
-Registre `surface.json.source_snapshot`. Use commit quando houver Git; caso contrário, gere um ID determinístico a partir do manifesto de arquivos. Se o snapshot for igual ao já registrado, preserve o inventário válido em vez de refazê-lo.
+Registre `surface.json.source_snapshot.id` igual a `surface-candidates.json.source_snapshot.id`. Caminhos de entradas e evidências são relativos ao `source_root` do scan. Se o snapshot for igual ao já registrado, preserve o inventário e as resoluções válidas em vez de refazê-los.
 
 ### 4. Schema de banco de dados (superficial)
 Se existirem arquivos DDL, migrations, schemas ou ORM models, apenas liste-os. O `reversa-data-master` fará a análise detalhada.
@@ -75,6 +78,7 @@ Preencha sempre:
 
 **Em `.reversa/context/`:**
 - `surface.json` — dados estruturados para os demais agentes
+- `surface.json.surface_discovery` — snapshot e uma resolução por candidato do scan
 
 ## Checkpoint
 
@@ -82,6 +86,7 @@ Ao concluir, informe ao Reversa:
 - Arquivos gerados (caminhos relativos)
 - Resumo: linguagens, framework principal, módulos identificados
 - Snapshot e quantidade de entradas comportamentais identificadas
+- Quantidades de candidatos promovidos, auxiliares, excluídos e pendentes
 
 O Reversa salvará o checkpoint em `.reversa/state.json`.
 

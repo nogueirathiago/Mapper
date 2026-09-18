@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   existsSync,
   cpSync,
+  chmodSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -73,6 +74,24 @@ function testDeterministicArtifactAndAtomicFailure() {
   }
 }
 
+function testUnreadableFileBecomesScanGap() {
+  const root = makeRoot();
+  const unreadable = join(root, 'user', 'unreadable.js');
+  try {
+    writeFileSync(unreadable, 'export const value = 1;\n');
+    chmodSync(unreadable, 0o000);
+    const { artifact } = scanSurface(root);
+    assert.equal(artifact.summary.files_scanned, 1);
+    assert.equal(artifact.candidates.length, 0);
+    assert.equal(artifact.scan_gaps.length, 1);
+    assert.equal(artifact.scan_gaps[0].file, 'unreadable.js');
+    assert.match(artifact.scan_gaps[0].error, /read_failed|EACCES/);
+  } finally {
+    chmodSync(unreadable, 0o600);
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
 function testMvcActions() {
   const root = mkdtempSync(join(tmpdir(), 'reversa-surface-mvc-'));
   try {
@@ -111,7 +130,7 @@ function compactSteps(candidate) {
 }
 
 function testRazorAndJavaScriptFlows() {
-  const a = scanFixture('ui-flow-a', ['mvc-basic']);
+  const a = scanFixture('ui-flow-a');
   const b = scanFixture('ui-flow-b');
   try {
     const uiA = a.artifact.candidates.filter((item) => item.type === 'ui_action');
@@ -236,9 +255,106 @@ function testScanSurfaceCommand() {
   }
 }
 
+function flowShape(artifact) {
+  return artifact.candidates
+    .filter((item) => item.type === 'ui_action')
+    .map((item) => ({
+      type: item.type,
+      control_kind: item.control_kind,
+      guard_count: item.guards.length,
+      steps: item.steps.map((step) => ({ kind: step.kind, method: step.method })),
+      confidence: item.confidence,
+      disposition_hint: item.disposition_hint ?? null,
+    }));
+}
+
+function testScannerIsIndependentFromFixtureNames() {
+  const original = scanFixture('ui-flow-b');
+  const renamedRoot = mkdtempSync(join(tmpdir(), 'reversa-surface-renamed-'));
+  try {
+    cpSync(join(fixturesRoot, 'ui-flow-b'), renamedRoot, { recursive: true });
+    for (const relativePath of ['Views/Review/Index.cshtml', 'Scripts/review-flow.js']) {
+      const path = join(renamedRoot, relativePath);
+      const renamed = readFileSync(path, 'utf8')
+        .replaceAll('Review', 'Audit')
+        .replaceAll('review', 'audit')
+        .replaceAll('Submit', 'Approve')
+        .replaceAll('submit', 'approve')
+        .replaceAll('Alternative', 'Secondary')
+        .replaceAll('alternative', 'secondary')
+        .replaceAll('Validate', 'Check')
+        .replaceAll('Close', 'Dismiss')
+        .replaceAll('close', 'dismiss');
+      writeFileSync(path, renamed);
+    }
+    const renamedArtifact = scanSurface(renamedRoot).artifact;
+    assert.deepEqual(flowShape(renamedArtifact), flowShape(original.artifact));
+  } finally {
+    rmSync(original.root, { recursive: true, force: true });
+    rmSync(renamedRoot, { recursive: true, force: true });
+  }
+}
+
+function testAgentAndDocumentationContracts() {
+  const orchestrator = readFileSync(
+    new URL('../agents/reversa/SKILL.md', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    orchestrator,
+    /antes de (?:ativar|executar|reativar)[\s\S]*Scout[\s\S]*reversa scan-surface --json/i,
+  );
+  assert.match(orchestrator, /n[aã]o (?:faça|apresente)[\s\S]*pergunta/i);
+
+  const scout = readFileSync(
+    new URL('../agents/reversa-scout/SKILL.md', import.meta.url),
+    'utf8',
+  );
+  for (const token of [
+    'surface-candidates.json',
+    'candidate_resolutions',
+    'promoted',
+    'auxiliary',
+    'excluded',
+    'pending',
+  ]) {
+    assert.ok(scout.includes(token), `Scout sem contrato ${token}`);
+  }
+
+  const schema = readFileSync(
+    new URL('../agents/reversa-scout/references/surface-schema.md', import.meta.url),
+    'utf8',
+  );
+  assert.match(schema, /surface_discovery/);
+  assert.match(schema, /scan_snapshot_id/);
+  assert.match(schema, /candidate_resolutions/);
+
+  const reviewer = readFileSync(
+    new URL('../agents/reversa-reviewer/SKILL.md', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    reviewer,
+    /novos, alterados, pendentes, contraditórios|new, changed, pending, contradictory/i,
+  );
+
+  const config = readFileSync(new URL('../templates/config.toml', import.meta.url), 'utf8');
+  assert.match(config, /\[analysis][\s\S]*source_root\s*=\s*"\."/);
+
+  for (const guide of ['cli.md', 'cli.pt.md', 'cli.es.md']) {
+    const content = readFileSync(new URL(`../docs/${guide}`, import.meta.url), 'utf8');
+    for (const token of ['scan-surface', '--source=<', '--json', 'surface-candidates.json']) {
+      assert.ok(content.includes(token), `${guide} sem ${token}`);
+    }
+  }
+}
+
 testSourcePrecedenceAndContainment();
 testDeterministicArtifactAndAtomicFailure();
+testUnreadableFileBecomesScanGap();
 testMvcActions();
 testRazorAndJavaScriptFlows();
 testScanSurfaceCommand();
+testScannerIsIndependentFromFixtureNames();
+testAgentAndDocumentationContracts();
 console.log('RESULTADO: ✓ nucleo do scanner de superficie');

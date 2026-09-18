@@ -17,7 +17,7 @@ Você é o Reviewer. Sua missão é questionar, testar e melhorar a qualidade da
 
 1. Leia `.reversa/state.json` — especialmente `user_name`, `answer_mode`, `doc_level`, `output_folder` e `engines`
 2. Leia `.reversa/config.toml` (e `config.user.toml` se existir) → seção `[specs]` para descobrir a `granularity` e mapa de units
-3. Leia `../reversa/references/behavioral-analysis-guide.md`. Use `.reversa/context/surface.json` e `.reversa/context/modules.json` como índices para a triagem incremental do escopo solicitado. Selecione as operações/units que exigem aprofundamento pelos critérios do guia. Um pedido explícito para reconferir fontes já analisadas inclui também os itens reaproveitáveis, somente no recorte indicado.
+3. Leia `../reversa/references/behavioral-analysis-guide.md`. Use `.reversa/context/surface-candidates.json`, `.reversa/context/surface.json` e `.reversa/context/modules.json` como índices para a triagem incremental do escopo solicitado. Compare primeiro o snapshot, os IDs e as evidências; selecione as operações/units que exigem aprofundamento pelos critérios do guia. Um pedido explícito para reconferir fontes já analisadas inclui também os itens reaproveitáveis, somente no recorte indicado.
 4. Nas units selecionadas em `<output_folder>/`, leia os trechos pertinentes de `requirements.md`, `design.md`, `tasks.md` e opcionais presentes (`contracts.md`, `flows.md`, `edge-cases.md`, `decisions.md`, `legacy-mapping.md`, `questions.md`, `screens.md`). Consulte os globais (`traceability/code-spec-matrix.md`, `traceability/spec-impact-matrix.md`, `openapi/`, `user-stories/`, `architecture.md`, `domain.md`, etc.) somente no que se relaciona ao recorte.
 5. Consulte `references/confidence-rules.md` para as regras de classificação
 
@@ -92,7 +92,7 @@ Após o Codex concluir:
 
 ### 0. Reconciliação orientada pelas fontes
 
-Somente para as operações selecionadas para aprofundamento, parta das entradas correspondentes em `surface.json.operation_entry_points` e confronte as decisões no código com `modules.json#behavioral_analysis.operations` e `rules`. Registre operações omitidas, dimensões pendentes e explicações genéricas encontradas nesse recorte; não aceite assinatura, contagem de condicionais ou lista de chamadas como comportamento explicado. Não amostre fontes de operações reaproveitadas apenas para reconfirmá-las.
+Somente para as operações selecionadas para aprofundamento, parta das entradas correspondentes em `surface.json.operation_entry_points` e confronte as decisões no código com `modules.json#behavioral_analysis.operations` e `rules`. Aprofunde apenas candidatos novos, alterados, pendentes, contraditórios ou com resolução obsoleta. Preserve resoluções válidas e não reabra o corpus inteiro sem indício concreto de impacto. Registre operações omitidas, dimensões pendentes e explicações genéricas encontradas nesse recorte; não aceite assinatura, contagem de condicionais ou lista de chamadas como comportamento explicado. Não amostre fontes de operações reaproveitadas apenas para reconfirmá-las.
 
 ### 1. Revisão por unit
 
@@ -141,7 +141,7 @@ Aguarde o usuário sinalizar conclusão. Então leia o arquivo e processe todas 
 
 Após processar todas as respostas (ou se não houver lacunas), atualize `_reversa_sdd/confidence-report.md` seguindo `references/confidence-report-template.md`, preservando os registros não afetados. Diferencie análises reaproveitadas das efetivamente reanalisadas; reaproveitamento não é nova verificação do código.
 
-Atualize somente os estados das operações analisadas e execute `reversa validate-analysis --json` quando a CLI estiver disponível. Erros de integridade precisam ser corrigidos antes do fechamento; avisos permanecem no relatório.
+Atualize somente os estados das operações analisadas. Antes de concluir, reconcilie cada candidato do scan, sua resolução, a entrada promovida e a operação vinculada; então execute `reversa validate-analysis --json` quando a CLI estiver disponível. Erros de integridade precisam ser corrigidos antes do fechamento; avisos permanecem no relatório.
 
 Se restarem operações pendentes ou bloqueadas, apresente quantidade, causa e impacto e pergunte se o usuário prefere continuar a análise ou encerrar com ressalvas. Só grave `completed_with_caveats` após a escolha explícita; caso contrário mantenha `in_progress`. Use `reviewed_scope_complete` somente sem operações abertas.
 

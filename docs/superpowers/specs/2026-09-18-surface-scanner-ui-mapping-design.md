@@ -1,6 +1,6 @@
 # Descoberta deterministica de acoes de interface
 
-**Status:** em revisao pelo usuario em 2026-09-18
+**Status:** aprovado pelo usuario em 2026-09-18
 **Escopo inicial:** ASP.NET MVC, Razor e JavaScript/jQuery  
 **Checkout de referencia:** `main@be14234`
 

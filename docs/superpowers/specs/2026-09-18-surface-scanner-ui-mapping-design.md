@@ -1,6 +1,6 @@
 # Descoberta deterministica de acoes de interface
 
-**Status:** aprovado pelo usuario em 2026-09-18  
+**Status:** em revisao pelo usuario em 2026-09-18
 **Escopo inicial:** ASP.NET MVC, Razor e JavaScript/jQuery  
 **Checkout de referencia:** `main@be14234`
 
@@ -11,28 +11,24 @@ observavel, mas a descoberta atual e executada apenas por instrucoes do Scout.
 O CLI valida o catalogo produzido pelo agente, sem descobrir entradas por conta
 propria nem comparar o catalogo com a superficie real do codigo.
 
-No corpus Prestacao de Contas, o Scout reconheceu 934 arquivos Razor e 355
-arquivos JavaScript, mas registrou 1.828 acoes MVC e um job como as unicas 1.829
-entradas comportamentais. O proprio resumo do `surface.json` informa que a
-metodologia enumerou metodos publicos de Controllers. Nenhuma acao de interface
-foi catalogada.
-
-Isso omitiu uma cadeia implementada e observavel:
+Em projetos que usam views e handlers no cliente, enumerar somente actions de
+Controller pode omitir cadeias implementadas e observaveis como:
 
 ```text
-EM_ANDAMENTO
--> Enviar Prestacao de Contas para Avaliacao
--> ValidarSaldoNegativoFontes
--> ValidarEncerrarPrestacaoContas
--> partialStatusEnvio
--> Enviar para Pre Analise ou Enviar para Analise
--> confirmar
--> EncerrarPrestacaoContas
+estado de dominio
+-> controle visivel sob uma guarda
+-> handler JavaScript
+-> validacao HTTP
+-> callback de sucesso
+-> partial com a etapa seguinte
+-> confirmacao
+-> mutacao HTTP final
 ```
 
-Uma acao homonima de recurso administrativo foi mapeada em outra unit. Como a
-cadeia de envio inicial nao existia no catalogo, as specs e os consumidores de
-memoria nao conseguiram recompor o fluxo correto.
+Quando essa cadeia nao existe no catalogo, as specs e os consumidores de
+conhecimento nao conseguem recompor o fluxo correto. A presenca de controles
+com rotulos semelhantes e destinos diferentes ainda pode provocar associacoes
+incorretas entre operacoes independentes.
 
 ## 2. Objetivo
 
@@ -47,6 +43,12 @@ superficie MVC/Razor/jQuery antes do Scout, mantendo separadas:
 A granularidade das specs (`endpoint`, `hybrid` etc.) permanece uma decisao de
 organizacao posterior e nao altera a cobertura da descoberta.
 
+O desenho e os artefatos sao independentes de dominio e de projeto. Nenhum
+nome de sistema, modulo, Controller, rota, status, seletor, texto de interface
+ou caminho de um consumidor pode integrar regras do scanner ou criterios
+normativos de aceite. A generalidade vale para qualquer projeto dentro das
+stacks suportadas; ampliar a lista de stacks e uma evolucao separada.
+
 ## 3. Fora de escopo
 
 - suporte inicial a outras stacks;
@@ -54,6 +56,7 @@ organizacao posterior e nao altera a cobertura da descoberta.
 - parser Razor completo, AST universal ou call graph geral;
 - banco, indice, servico de background ou cache incremental;
 - inferencia de regras de negocio pelo scanner;
+- heuristicas, excecoes ou dicionarios especificos de um projeto consumidor;
 - publicacao no Basic Memory;
 - regeneracao automatica de notas;
 - reextracao silenciosa de projetos consumidores;
@@ -75,12 +78,12 @@ Resolucao da raiz do codigo, em ordem de precedencia:
 4. `.` como fallback.
 
 O caminho deve ser relativo a raiz do projeto e permanecer dentro dela. Caminho
-absoluto ou que escape por `..` e rejeitado. Para Prestacao de Contas, o valor
-correto e:
+absoluto ou que escape por `..` e rejeitado. Por exemplo, um consumidor que
+mantenha o codigo em `src/` pode configurar:
 
 ```toml
 [analysis]
-source_root = "source"
+source_root = "src"
 ```
 
 O modo `--json` imprime somente o resumo operacional. Os candidatos completos
@@ -106,7 +109,7 @@ Estrutura de alto nivel:
 {
   "schema_version": 1,
   "generated_at": "2026-09-18T00:00:00Z",
-  "source_root": "source",
+  "source_root": "src",
   "source_snapshot": {
     "kind": "manifest_sha256",
     "id": "<hash>"
@@ -137,25 +140,25 @@ Um candidato de interface possui somente fatos extraidos do codigo:
 {
   "id": "CAND-UI-<hash>",
   "type": "ui_action",
-  "label": "Enviar Prestacao de Contas para Avaliacao",
-  "selector": "#btnEnviar",
-  "file": "PrestacaoContas/Views/PrestarContasPDDEPaulista/partialAbas.cshtml",
+  "label": "Enviar solicitacao",
+  "selector": "#btnEnviarSolicitacao",
+  "file": "Aplicacao.Web/Views/Solicitacoes/Detalhe.cshtml",
   "line": 155,
   "guards": [
-    "IdStatus == EM_ANDAMENTO",
-    "EnvioAprovacaoPreAnaliseDisponivel"
+    "Status == PENDENTE",
+    "PodeEnviar"
   ],
   "confidence": "exact",
   "steps": [
     {
       "kind": "http",
       "method": "GET",
-      "target": "PrestarContasPDDEPaulista/ValidarSaldoNegativoFontes"
+      "target": "Solicitacoes/ValidarEnvio"
     },
     {
       "kind": "http_on_success",
       "method": "GET",
-      "target": "PrestarContasPDDEPaulista/ValidarEncerrarPrestacaoContas"
+      "target": "Solicitacoes/PrepararConfirmacao"
     }
   ],
   "evidence": []
@@ -240,7 +243,7 @@ resolucoes no proprio `surface.json`:
         "candidate_id": "CAND-UI-<hash>",
         "disposition": "promoted",
         "entry_point_id": "ENTRY-UI-<hash>",
-        "reason": "Acao inicia validacao e envio da prestacao."
+        "reason": "Acao inicia a validacao e o envio da solicitacao."
       }
     ]
   }
@@ -319,30 +322,36 @@ Nenhuma falha de parse autoriza inventar destino ou descartar o arquivo.
 
 ## 12. Aceitacao
 
-### 12.1 Corpus PDDE
+### 12.1 Fixtures genericas
 
-Sem hardcode de nome de projeto, controller, botao ou status, o scanner deve
-recuperar e ordenar evidencias suficientes para o Scout documentar:
-
-```text
-EM_ANDAMENTO
--> btnEnviar: Enviar Prestacao de Contas para Avaliacao
--> GET ValidarSaldoNegativoFontes
--> em sucesso, GET ValidarEncerrarPrestacaoContas
--> retorno partialStatusEnvio
--> btnEnviarPreAnalise ou btnEnviarAnalise
--> confirmacao
--> POST EncerrarPrestacaoContas
-```
-
-O fluxo diferente deve permanecer separado:
+Os testes usam fixtures sinteticas, sem copiar nomes, caminhos ou regras de um
+projeto consumidor. O scanner deve recuperar e ordenar evidencias suficientes
+para o Scout documentar uma cadeia completa como:
 
 ```text
-btnEnviarReprovado
--> POST RecursosAdministrativos/ValidarEnviarCOFINPCO
+PENDENTE
+-> btnEnviarSolicitacao: Enviar solicitacao
+-> GET Solicitacoes/ValidarEnvio
+-> em sucesso, GET Solicitacoes/PrepararConfirmacao
+-> retorno _ConfirmarEnvio
+-> btnConfirmarEnvio
 -> confirmacao
--> POST RecursosAdministrativos/EnviarCOFINPCO
+-> POST Solicitacoes/Enviar
 ```
+
+Uma segunda fixture deve provar que rotulos semelhantes nao unem fluxos com
+guardas, handlers ou destinos distintos:
+
+```text
+btnEnviarAlternativo
+-> POST FluxoAlternativo/Validar
+-> confirmacao
+-> POST FluxoAlternativo/Enviar
+```
+
+As fixtures devem variar nomes, estrutura de diretorios, convencoes de rota e
+forma de registrar handlers. Nenhum valor literal das fixtures pode aparecer
+na implementacao do scanner como regra especial.
 
 ### 12.2 Testes automatizados
 
@@ -368,8 +377,12 @@ Cobrir ao menos:
 
 - suite `npm run verify` verde;
 - testes novos do scanner e validador verdes;
-- dry-run no corpus Prestacao de Contas sem alterar `_reversa_sdd/`;
-- comparacao documentada entre candidatos novos e o `surface.json` atual;
+- dry-run em pelo menos dois projetos-fixture independentes, sem alterar
+  `_reversa_sdd/`;
+- comparacao documentada entre candidatos novos, resolucoes esperadas e o
+  `surface.json` gerado para cada fixture;
+- busca estatica comprovando ausencia de nomes de projetos consumidores na
+  implementacao e nas fixtures automatizadas;
 - nenhum remapeamento, publicacao ou reindexacao automatica.
 
 ## 13. Superficie de implementacao

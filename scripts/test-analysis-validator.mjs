@@ -21,19 +21,49 @@ const writeJson = (path, value) => writeFileSync(path, JSON.stringify(value, nul
 function createWorkspace({
   operationStatus = 'reviewed',
   completionStatus = 'reviewed_scope_complete',
-  sourceFile = 'source/approval.js',
+  sourceFile = 'approval.js',
   source = 'export function approve(amount) { return amount <= 100; }\n',
+  includeDiscovery = true,
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'reversa-analysis-'));
   mkdirSync(join(root, '.reversa', 'context'), { recursive: true });
-  mkdirSync(dirname(join(root, sourceFile)), { recursive: true });
-  writeFileSync(join(root, sourceFile), source, 'utf8');
-  writeJson(join(root, '.reversa', 'context', 'surface.json'), {
+  const sourceRoot = join(root, 'source');
+  mkdirSync(dirname(join(sourceRoot, sourceFile)), { recursive: true });
+  writeFileSync(join(sourceRoot, sourceFile), source, 'utf8');
+  const surface = {
     source_snapshot: { kind: 'manifest', id: 'snapshot-1' },
     operation_entry_points: [
       { id: 'ENTRY-001', type: 'endpoint', name: 'Approve', file: sourceFile, line: 1 },
     ],
-  });
+  };
+  if (includeDiscovery) {
+    surface.surface_discovery = {
+      schema_version: 1,
+      scan_snapshot_id: 'snapshot-1',
+      candidate_resolutions: [{
+        candidate_id: 'CAND-001',
+        disposition: 'promoted',
+        entry_point_id: 'ENTRY-001',
+        reason: 'Observable operation entry.',
+      }],
+    };
+    writeJson(join(root, '.reversa', 'context', 'surface-candidates.json'), {
+      schema_version: 1,
+      source_root: 'source',
+      source_snapshot: { kind: 'manifest_sha256', id: 'snapshot-1' },
+      summary: { files_scanned: 1, candidates: 1, exact: 1, unresolved: 0 },
+      candidates: [{
+        id: 'CAND-001',
+        type: 'mvc_action',
+        file: sourceFile,
+        line: 1,
+        confidence: 'exact',
+        evidence: [{ file: sourceFile, line: 1, end_line: 1 }],
+      }],
+      scan_gaps: [],
+    });
+  }
+  writeJson(join(root, '.reversa', 'context', 'surface.json'), surface);
 
   const operation = {
     id: 'OP-001',
@@ -83,6 +113,24 @@ function createWorkspace({
   return root;
 }
 
+function createLegacyWorkspace(options = {}) {
+  const root = createWorkspace({ ...options, includeDiscovery: false });
+  mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+    surface.operation_entry_points[0].file = `source/${surface.operation_entry_points[0].file}`;
+  });
+  mutateJson(join(root, '.reversa', 'context', 'modules.json'), (modules) => {
+    const evidence = modules.behavioral_analysis.rules[0]?.evidence[0];
+    if (evidence) evidence.file = `source/${evidence.file}`;
+  });
+  return root;
+}
+
+function mutateJson(path, mutate) {
+  const value = JSON.parse(readText(path));
+  mutate(value);
+  writeJson(path, value);
+}
+
 function testLegacyWorkspaceIsNotPromoted() {
   const root = mkdtempSync(join(tmpdir(), 'reversa-analysis-legacy-'));
   mkdirSync(join(root, '.reversa', 'context'), { recursive: true });
@@ -105,6 +153,173 @@ function testReviewedScopePasses() {
   assert.equal(cli.status, 0, cli.stderr);
   assert.equal(JSON.parse(cli.stdout).status, 'reviewed_scope_complete');
   rmSync(root, { recursive: true, force: true });
+}
+
+function testLegacySurfaceDiscoveryIsOnlyWarning() {
+  const root = createLegacyWorkspace();
+  try {
+    const report = validateAnalysis(root);
+    assert.equal(report.status, 'reviewed_scope_complete');
+    assert.deepEqual(report.errors, []);
+    assert.ok(report.warnings.some((item) => item.code === 'surface_discovery_unmeasured'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testSurfaceSnapshotMismatchFails() {
+  const root = createWorkspace();
+  try {
+    mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+      surface.surface_discovery.scan_snapshot_id = 'snapshot-stale';
+    });
+    const report = validateAnalysis(root);
+    assert.ok(report.errors.some((item) => item.code === 'surface_scan_snapshot_mismatch'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testCandidateResolutionMissingFails() {
+  const root = createWorkspace();
+  try {
+    mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+      surface.surface_discovery.candidate_resolutions = [];
+    });
+    const report = validateAnalysis(root);
+    assert.ok(report.errors.some((item) => item.code === 'candidate_resolution_missing'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testCandidateResolutionStaleFails() {
+  const root = createWorkspace();
+  try {
+    mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+      surface.surface_discovery.candidate_resolutions.push({
+        candidate_id: 'CAND-STALE', disposition: 'excluded', reason: 'No current candidate.',
+      });
+    });
+    const report = validateAnalysis(root);
+    assert.ok(report.errors.some((item) => item.code === 'candidate_resolution_stale'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testCandidateResolutionDuplicateFails() {
+  const root = createWorkspace();
+  try {
+    mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+      surface.surface_discovery.candidate_resolutions.push({
+        ...surface.surface_discovery.candidate_resolutions[0],
+      });
+    });
+    const report = validateAnalysis(root);
+    assert.ok(report.errors.some((item) => item.code === 'candidate_resolution_duplicate'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testCandidateResolutionInvalidFails() {
+  const root = createWorkspace();
+  try {
+    mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+      surface.surface_discovery.candidate_resolutions[0].disposition = 'invented';
+    });
+    const report = validateAnalysis(root);
+    assert.ok(report.errors.some((item) => item.code === 'candidate_resolution_invalid'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testAuxiliaryAndExcludedRequireReason() {
+  for (const disposition of ['auxiliary', 'excluded']) {
+    const root = createWorkspace();
+    try {
+      mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+        surface.surface_discovery.candidate_resolutions[0] = {
+          candidate_id: 'CAND-001', disposition, reason: '  ',
+        };
+      });
+      const report = validateAnalysis(root);
+      assert.ok(report.errors.some((item) => item.code === 'candidate_resolution_reason_missing'));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+}
+
+function testCandidatePromotionUnknownEntryFails() {
+  const root = createWorkspace();
+  try {
+    mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+      surface.surface_discovery.candidate_resolutions[0].entry_point_id = 'ENTRY-UNKNOWN';
+    });
+    const report = validateAnalysis(root);
+    assert.ok(report.errors.some((item) => item.code === 'candidate_promotion_unknown_entry'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testCandidatePromotionUnmappedEntryFails() {
+  const root = createWorkspace();
+  try {
+    mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+      surface.operation_entry_points.push({
+        id: 'ENTRY-002', type: 'endpoint', name: 'Second', file: 'approval.js', line: 1,
+      });
+      surface.surface_discovery.candidate_resolutions[0].entry_point_id = 'ENTRY-002';
+    });
+    const report = validateAnalysis(root);
+    assert.ok(report.errors.some((item) => item.code === 'candidate_promotion_unmapped_entry'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testSurfaceScanGapBlocksOnlyTotalConclusion() {
+  for (const completionStatus of ['in_progress', 'reviewed_scope_complete']) {
+    const root = createWorkspace({ completionStatus });
+    try {
+      mutateJson(join(root, '.reversa', 'context', 'surface-candidates.json'), (discovery) => {
+        discovery.scan_gaps = [{ file: 'unreadable.cs', error: 'read_failed' }];
+      });
+      const report = validateAnalysis(root);
+      if (completionStatus === 'reviewed_scope_complete') {
+        assert.ok(report.errors.some((item) => item.code === 'surface_scan_gap'));
+      } else {
+        assert.ok(report.warnings.some((item) => item.code === 'surface_scan_gap'));
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+}
+
+function testPendingCandidateBlocksOnlyTotalConclusion() {
+  for (const completionStatus of ['in_progress', 'reviewed_scope_complete']) {
+    const root = createWorkspace({ completionStatus });
+    try {
+      mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+        surface.surface_discovery.candidate_resolutions[0] = {
+          candidate_id: 'CAND-001', disposition: 'pending', reason: 'Evidence is insufficient.',
+        };
+      });
+      const report = validateAnalysis(root);
+      if (completionStatus === 'reviewed_scope_complete') {
+        assert.ok(report.errors.some((item) => item.code === 'surface_candidate_pending'));
+      } else {
+        assert.ok(report.warnings.some((item) => item.code === 'surface_candidate_pending'));
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
 }
 
 function testPendingWorkRejectsTotalConclusion() {
@@ -176,7 +391,7 @@ function testUnmappedEntryPointRejectsTotalConclusion() {
   const surfacePath = join(root, '.reversa', 'context', 'surface.json');
   const surface = JSON.parse(readText(surfacePath));
   surface.operation_entry_points.push({
-    id: 'ENTRY-002', type: 'job', name: 'Reconcile', file: 'source/approval.js', line: 1,
+    id: 'ENTRY-002', type: 'job', name: 'Reconcile', file: 'approval.js', line: 1,
   });
   writeJson(surfacePath, surface);
   const report = validateAnalysis(root);
@@ -186,6 +401,17 @@ function testUnmappedEntryPointRejectsTotalConclusion() {
 }
 
 function testEvidenceCannotEscapeProject() {
+  const root = createLegacyWorkspace();
+  const modulesPath = join(root, '.reversa', 'context', 'modules.json');
+  const modules = JSON.parse(readText(modulesPath));
+  modules.behavioral_analysis.rules[0].evidence[0].file = '../outside.js';
+  writeJson(modulesPath, modules);
+  const report = validateAnalysis(root);
+  assert.ok(report.errors.some((item) => item.code === 'evidence_path_outside_project'));
+  rmSync(root, { recursive: true, force: true });
+}
+
+function testEvidenceCannotEscapeConfiguredSourceRoot() {
   const root = createWorkspace();
   const modulesPath = join(root, '.reversa', 'context', 'modules.json');
   const modules = JSON.parse(readText(modulesPath));
@@ -209,7 +435,7 @@ function testDiscoveryAgentsUseSharedMethod() {
 
 function testContractIsLanguageNeutral() {
   const root = createWorkspace({
-    sourceFile: 'source/ApprovalService.cs',
+    sourceFile: 'ApprovalService.cs',
     source: 'public bool Approve(decimal amount) => amount <= 100m;\n',
   });
   const report = validateAnalysis(root);
@@ -224,11 +450,23 @@ function readText(path) {
 
 testLegacyWorkspaceIsNotPromoted();
 testReviewedScopePasses();
+testLegacySurfaceDiscoveryIsOnlyWarning();
+testSurfaceSnapshotMismatchFails();
+testCandidateResolutionMissingFails();
+testCandidateResolutionStaleFails();
+testCandidateResolutionDuplicateFails();
+testCandidateResolutionInvalidFails();
+testAuxiliaryAndExcludedRequireReason();
+testCandidatePromotionUnknownEntryFails();
+testCandidatePromotionUnmappedEntryFails();
+testSurfaceScanGapBlocksOnlyTotalConclusion();
+testPendingCandidateBlocksOnlyTotalConclusion();
 testPendingWorkRejectsTotalConclusion();
 testBlockedOperationRequiresRealInvestigation();
 testEvidenceHashMismatchFails();
 testUnmappedEntryPointRejectsTotalConclusion();
 testEvidenceCannotEscapeProject();
+testEvidenceCannotEscapeConfiguredSourceRoot();
 testDiscoveryAgentsUseSharedMethod();
 testContractIsLanguageNeutral();
 console.log('RESULTADO: ✓ validador de análise comportamental');

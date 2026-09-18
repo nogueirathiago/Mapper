@@ -1,0 +1,13 @@
+@if (Model.CanSubmit) {
+  <button id="btnReview">Submit review</button>
+}
+
+@if (Model.CanResubmit) {
+  <button id="btnReview">Submit review again</button>
+}
+
+<button id="btnAlternative">Submit alternative review</button>
+<button id="btnDynamic">Submit dynamic review</button>
+<button id="btnCloseModal">Close</button>
+
+<script src="~/Scripts/review-flow.js"></script>

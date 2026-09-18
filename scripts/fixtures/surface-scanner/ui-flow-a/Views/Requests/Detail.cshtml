@@ -1,0 +1,16 @@
+@if (Model.Status == Status.Pending) {
+  <button id="btnSendRequest" disabled="@(!Model.CanSend)">Send request</button>
+}
+
+<form id="requestForm" action="/Requests/Create" method="post">
+  <button id="btnSubmitRequest" type="submit">Create request</button>
+</form>
+
+@using (Html.BeginForm("Save", "Requests", FormMethod.Post, new { id = "formSave" })) {
+  <button id="btnSaveRequest" type="submit">Save request</button>
+}
+
+@Html.ActionLink("Open details", "Detail", "Requests", null, new { id = "linkDetail" })
+<a id="linkHistory" href="@Url.Action("History", "Requests")">History</a>
+
+<script src="~/Scripts/request-flow.js"></script>

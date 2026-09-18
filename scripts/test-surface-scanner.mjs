@@ -97,7 +97,94 @@ function testMvcActions() {
   }
 }
 
+function scanFixture(name, extras = []) {
+  const root = mkdtempSync(join(tmpdir(), `reversa-surface-${name}-`));
+  cpSync(join(fixturesRoot, name), root, { recursive: true });
+  for (const extra of extras) cpSync(join(fixturesRoot, extra), root, { recursive: true });
+  return { root, artifact: scanSurface(root).artifact };
+}
+
+function compactSteps(candidate) {
+  return candidate.steps.map(({ kind, method, target }) => ({ kind, method, target }));
+}
+
+function testRazorAndJavaScriptFlows() {
+  const a = scanFixture('ui-flow-a', ['mvc-basic']);
+  const b = scanFixture('ui-flow-b');
+  try {
+    const uiA = a.artifact.candidates.filter((item) => item.type === 'ui_action');
+    const send = uiA.find((item) => item.selector === '#btnSendRequest');
+    assert.deepEqual(send.guards, ['Model.Status == Status.Pending', '!Model.CanSend']);
+    assert.deepEqual(compactSteps(send), [
+      { kind: 'http', method: 'GET', target: '/Requests/ValidateSend' },
+      { kind: 'partial_continuation', method: null, target: '_ConfirmSend' },
+      { kind: 'http_on_success', method: 'POST', target: '/Requests/Send' },
+    ]);
+    assert.equal(send.confidence, 'exact');
+
+    const confirmations = uiA.filter((item) => (
+      item.selector === '#btnConfirmSend' || item.selector === '#btnConfirmExpress'
+    ));
+    assert.equal(confirmations.length, 2);
+    assert.notEqual(confirmations[0].id, confirmations[1].id);
+    assert.deepEqual(
+      confirmations.map((item) => item.steps[0].arguments.mode).sort(),
+      ['expedited', 'standard'],
+    );
+
+    assert.deepEqual(compactSteps(uiA.find((item) => item.selector === '#requestForm')), [
+      { kind: 'http', method: 'POST', target: '/Requests/Create' },
+    ]);
+    assert.deepEqual(compactSteps(uiA.find((item) => item.selector === '#formSave')), [
+      { kind: 'http', method: 'POST', target: '/Requests/Save' },
+    ]);
+    assert.deepEqual(compactSteps(uiA.find((item) => item.selector === '#linkDetail')), [
+      { kind: 'navigation', method: 'GET', target: '/Requests/Detail' },
+    ]);
+    assert.deepEqual(compactSteps(uiA.find((item) => item.selector === '#linkHistory')), [
+      { kind: 'navigation', method: 'GET', target: '/Requests/History' },
+    ]);
+    assert.deepEqual(compactSteps(uiA.find((item) => item.selector === '#btnSubmitRequest')), [
+      { kind: 'submit', method: 'POST', target: '/Requests/Create' },
+    ]);
+
+    const uiB = b.artifact.candidates.filter((item) => item.type === 'ui_action');
+    const duplicateIdBranches = uiB.filter((item) => item.selector === '#btnReview');
+    assert.equal(duplicateIdBranches.length, 2);
+    assert.notEqual(duplicateIdBranches[0].id, duplicateIdBranches[1].id);
+    assert.deepEqual(duplicateIdBranches.map((item) => item.guards), [
+      ['Model.CanSubmit'],
+      ['Model.CanResubmit'],
+    ]);
+    for (const branch of duplicateIdBranches) {
+      assert.deepEqual(compactSteps(branch), [
+        { kind: 'http', method: 'POST', target: '/Review/Validate' },
+        { kind: 'http_on_success', method: 'POST', target: '/Review/Submit' },
+      ]);
+    }
+
+    const alternative = uiB.find((item) => item.selector === '#btnAlternative');
+    assert.deepEqual(compactSteps(alternative), [
+      { kind: 'http', method: 'POST', target: '/Alternative/Validate' },
+    ]);
+    assert.notEqual(duplicateIdBranches[0].id, alternative.id);
+
+    const dynamic = uiB.find((item) => item.selector === '#btnDynamic');
+    assert.equal(dynamic.confidence, 'unresolved');
+    assert.deepEqual(compactSteps(dynamic), [
+      { kind: 'http', method: 'POST', target: null },
+    ]);
+
+    const closeModal = uiB.find((item) => item.selector === '#btnCloseModal');
+    assert.equal(closeModal.disposition_hint, 'auxiliary');
+  } finally {
+    rmSync(a.root, { recursive: true, force: true });
+    rmSync(b.root, { recursive: true, force: true });
+  }
+}
+
 testSourcePrecedenceAndContainment();
 testDeterministicArtifactAndAtomicFailure();
 testMvcActions();
+testRazorAndJavaScriptFlows();
 console.log('RESULTADO: ✓ nucleo do scanner de superficie');

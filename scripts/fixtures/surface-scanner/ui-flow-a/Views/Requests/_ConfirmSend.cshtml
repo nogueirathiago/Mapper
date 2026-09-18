@@ -1,0 +1,12 @@
+<button id="btnConfirmSend">Confirm send</button>
+<button id="btnConfirmExpress">Confirm express send</button>
+
+<script>
+document.getElementById('btnConfirmSend').addEventListener('click', () => {
+  fetch('/Requests/Send', { method: 'POST', body: JSON.stringify({ mode: 'standard' }) });
+});
+
+document.getElementById('btnConfirmExpress').addEventListener('click', () => {
+  fetch('/Requests/Send', { method: 'POST', body: JSON.stringify({ mode: 'expedited' }) });
+});
+</script>

@@ -545,6 +545,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#scan-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scan-surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#update" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2263,6 +2274,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#scan-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scan-surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#update" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2364,19 +2386,25 @@
 </code></pre></div>
 <p>Valida referencias y hashes de evidencia, vínculos entre entradas, operaciones y reglas, progreso, bloqueos investigados y coherencia de la conclusión. Las advertencias permiten continuar o cerrar con salvedades; los errores indican un contrato inconsistente. El comando no certifica por sí solo la corrección semántica de una regla.</p>
 <hr />
+<h3 id="scan-surface"><code>scan-surface</code><a class="headerlink" href="#scan-surface" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>scan-surface
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>npx<span class="w"> </span>reversa<span class="w"> </span>scan-surface<span class="w"> </span>--source<span class="o">=</span>&lt;ruta-relativa&gt;<span class="w"> </span>--json
+</code></pre></div>
+<p>Descubre acciones ASP.NET MVC y flujos Razor/JavaScript y escribe <code>.reversa/context/surface-candidates.json</code>. <code>/reversa</code> ejecuta el comando automáticamente antes del Scout, sin hacer otra pregunta; el uso manual sirve solo para diagnóstico o reejecución. <code>--source</code> reemplaza la raíz relativa configurada, y <code>--json</code> imprime solo el resumen operativo. El código de salida <code>0</code> indica un scan completado, incluso con candidatos no resueltos; <code>1</code> indica un fallo fatal de configuración, acceso o escritura.</p>
+<hr />
 <h3 id="update"><code>update</code><a class="headerlink" href="#update" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>update
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>update
 </code></pre></div>
 <p>Actualiza todo a la versión más reciente de Reversa: todos los agentes del paquete se reinstalan, incluyendo agentes que no existían cuando instalaste.</p>
 <p>El comando es inteligente: verifica el manifiesto SHA-256 de cada archivo y nunca sobreescribe archivos que hayas personalizado.</p>
 <hr />
 <h3 id="add-engine"><code>add-engine</code><a class="headerlink" href="#add-engine" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>add-engine
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>add-engine
 </code></pre></div>
 <p>Agrega soporte para un motor de IA que no estaba presente cuando instalaste.</p>
 <hr />
 <h3 id="uninstall"><code>uninstall</code><a class="headerlink" href="#uninstall" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>uninstall
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>uninstall
 </code></pre></div>
 <p>Elimina Reversa del proyecto: borra los archivos creados por la instalación.</p>
 <div class="admonition info">

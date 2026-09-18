@@ -545,6 +545,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#scan-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scan-surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#update" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2263,6 +2274,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#scan-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scan-surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#update" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2364,19 +2386,25 @@
 </code></pre></div>
 <p>Validates evidence references and hashes, links between entry points, operations and rules, progress, investigated blockers, and completion consistency. Warnings allow continued work or completion with caveats; errors mean the contract is inconsistent. The command does not certify the semantic correctness of a rule by itself.</p>
 <hr />
+<h3 id="scan-surface"><code>scan-surface</code><a class="headerlink" href="#scan-surface" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>scan-surface
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>npx<span class="w"> </span>reversa<span class="w"> </span>scan-surface<span class="w"> </span>--source<span class="o">=</span>&lt;relative-path&gt;<span class="w"> </span>--json
+</code></pre></div>
+<p>Discovers ASP.NET MVC actions and Razor/JavaScript UI flows and writes <code>.reversa/context/surface-candidates.json</code>. <code>/reversa</code> runs this command automatically before the Scout without asking another question; manual use is only for diagnostics or re-execution. <code>--source</code> overrides the configured relative source root, and <code>--json</code> prints only the operational summary. Exit code <code>0</code> means the scan completed, including unresolved candidates; exit code <code>1</code> means a fatal configuration, access, or write failure.</p>
+<hr />
 <h3 id="update"><code>update</code><a class="headerlink" href="#update" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>update
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>update
 </code></pre></div>
 <p>Updates everything to the latest version of Reversa: all agents shipped with the package are reinstalled, including agents that didn't exist when you first installed.</p>
 <p>The command is smart: it checks the SHA-256 manifest of each file and never overwrites files you've customized. If you made adjustments to any agent, they stay intact.</p>
 <hr />
 <h3 id="add-engine"><code>add-engine</code><a class="headerlink" href="#add-engine" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>add-engine
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>add-engine
 </code></pre></div>
 <p>Adds support for an AI engine that wasn't present when you installed. For example: you installed only for Claude Code and now want to add Codex.</p>
 <hr />
 <h3 id="uninstall"><code>uninstall</code><a class="headerlink" href="#uninstall" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>uninstall
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>npx<span class="w"> </span>reversa<span class="w"> </span>uninstall
 </code></pre></div>
 <p>Removes Reversa from the project: deletes the files created by the installation (<code>.reversa/</code>, <code>.agents/skills/reversa-*/</code>, engine entry files).</p>
 <div class="admonition info">

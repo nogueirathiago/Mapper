@@ -1,0 +1,24 @@
+<button
+  type="button"
+  id="btnConfirmWorkflow"
+  class="btn btn-primary">
+  Confirm workflow
+</button>
+
+<script>
+function completeWorkflow() {
+  const baseUrl = window.location.protocol + '//' + window.location.host + '/';
+  $.ajax({
+    method: 'POST',
+    url: baseUrl + 'area/Workflow/Complete'
+  });
+}
+
+$('#btnConfirmWorkflow').click(function () {
+  Modal.confirm({
+    accept: function () {
+      completeWorkflow();
+    }
+  });
+});
+</script>

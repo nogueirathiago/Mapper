@@ -1,0 +1,7 @@
+<button id="btnConfirmWorkflow">Foreign confirmation</button>
+
+<script>
+$('#btnConfirmWorkflow').click(function () {
+  $.ajax({ method: 'POST', url: '/Other/Complete' });
+});
+</script>

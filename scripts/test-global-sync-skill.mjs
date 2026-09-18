@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import {
-  existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, writeFileSync,
+  existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, realpathSync, rmSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -23,6 +23,7 @@ try {
   const sourceRoot = join(volumeRoot, 'fork');
   const codexSkillsRoot = join(root, 'fake-home', '.codex', 'skills');
   mkdirSync(sourceRoot, { recursive: true });
+  const physicalSourceRoot = realpathSync(sourceRoot);
   createSource(sourceRoot, 'first');
   const policy = createStoragePolicy({ volumeRoot, dataRoot });
 
@@ -31,7 +32,7 @@ try {
   assert.equal(resolve(dirname(first.discoveryLink), readlinkSync(first.discoveryLink)), resolve(first.activeSkill));
   assert.equal(readFileSync(join(first.activeSkill, 'SKILL.md'), 'utf8').includes('first'), true);
   assert.deepEqual(JSON.parse(readFileSync(first.configPath, 'utf8')), {
-    version: 1, forkPath: sourceRoot, remote: 'origin', branch: 'main',
+    version: 1, forkPath: physicalSourceRoot, remote: 'origin', branch: 'main',
   });
 
   createSource(sourceRoot, 'second');

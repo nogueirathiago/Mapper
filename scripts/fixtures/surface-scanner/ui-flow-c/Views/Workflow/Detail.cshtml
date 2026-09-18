@@ -1,0 +1,17 @@
+<button id="btnOpenWorkflow">Open workflow</button>
+
+<script>
+$('#btnOpenWorkflow').click(function () {
+  const baseUrl = window.location.protocol + '//' + window.location.host + '/';
+  $.ajax({
+    method: 'GET',
+    url: baseUrl + 'area/Workflow/Check?id=' + modelId,
+    success: function (data) {
+      if (data.success) {
+        const validationUrl = String.format(baseUrl + 'area/Workflow/Validate?id={0}', modelId);
+        $.ajax({ method: 'GET', url: validationUrl });
+      }
+    }
+  });
+});
+</script>

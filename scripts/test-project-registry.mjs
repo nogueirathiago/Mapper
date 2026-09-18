@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import {
-  mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync,
+  mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -25,9 +25,10 @@ try {
   mkdirSync(volumeRoot, { recursive: true });
   mkdirSync(outside, { recursive: true });
   createInstalledProject(project);
+  const physicalProject = realpathSync(project);
 
   const policy = createStoragePolicy({ volumeRoot, dataRoot });
-  assert.equal(policy.assertOnVolume(project), project);
+  assert.equal(policy.assertOnVolume(project), physicalProject);
   assert.throws(() => policy.assertOnVolume(outside), /fora do volume permitido/);
 
   const escapingLink = join(volumeRoot, 'escaping-link');
@@ -38,11 +39,11 @@ try {
     version: PROJECTS_REGISTRY_VERSION,
     projects: [],
   });
-  assert.deepEqual(registerProject(project, { policy }).projects, [project]);
-  assert.deepEqual(registerProject(project, { policy }).projects, [project]);
+  assert.deepEqual(registerProject(project, { policy }).projects, [physicalProject]);
+  assert.deepEqual(registerProject(project, { policy }).projects, [physicalProject]);
 
   const persisted = JSON.parse(readFileSync(policy.projectsRegistryPath, 'utf8'));
-  assert.deepEqual(persisted.projects, [project]);
+  assert.deepEqual(persisted.projects, [physicalProject]);
 
   persisted.projects.push(join(volumeRoot, 'temporarily-unavailable'));
   writeFileSync(policy.projectsRegistryPath, JSON.stringify(persisted), 'utf8');
@@ -68,4 +69,3 @@ try {
 }
 
 console.log('RESULTADO: ✓ registro global restrito ao volume permitido');
-

@@ -1,6 +1,10 @@
 using System.Web.Mvc;
 
-public class RequestsController : Controller
+public abstract class PortalController : Controller
+{
+}
+
+public class RequestsController : PortalController
 {
     [HttpGet]
     [Route("requests/{id}")]
@@ -13,5 +17,14 @@ public class RequestsController : Controller
     [NonAction]
     public bool PublicHelper(int id) => id > 0;
 
+    public static string StaticHelper(int id) => id.ToString();
+
     private bool InternalCheck(int id) => id > 0;
+}
+
+public class RecordsController : PortalController
+{
+    public ActionResult Lookup(int id) => View();
+
+    public ActionResult Lookup(string key) => View();
 }

@@ -8,6 +8,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -60,6 +61,13 @@ function testDeterministicArtifactAndAtomicFailure() {
     assert.deepEqual(readFileSync(first.artifactPath), firstBytes);
     assert.equal(existsSync(`${first.artifactPath}.tmp`), false);
 
+    const stale = { ...first.artifact, candidates: [{ id: 'STALE-CANDIDATE' }] };
+    delete stale.scanner_revision;
+    writeFileSync(first.artifactPath, `${JSON.stringify(stale)}\n`);
+    const refreshed = scanSurface(root).artifact;
+    assert.equal(refreshed.scanner_revision, 1);
+    assert.deepEqual(refreshed.candidates, []);
+
     writeFileSync(first.artifactPath, '{"sentinel":true}\n');
     const sentinel = readFileSync(first.artifactPath);
     writeFileSync(join(root, 'user', 'sample.js'), 'export const value = 2;\n');
@@ -94,27 +102,45 @@ function testUnreadableFileBecomesScanGap() {
 
 function testMvcActions() {
   const root = mkdtempSync(join(tmpdir(), 'reversa-surface-mvc-'));
+  const renamedRoot = mkdtempSync(join(tmpdir(), 'reversa-surface-mvc-renamed-'));
   try {
     cpSync(join(fixturesRoot, 'mvc-basic'), root, { recursive: true });
     const first = scanSurface(root).artifact;
     const mvc = first.candidates.filter((item) => item.type === 'mvc_action');
     const firstIds = mvc.map((item) => item.id);
 
-    assert.deepEqual(mvc.map((item) => item.action), ['Detail', 'ValidateSend']);
-    assert.deepEqual(mvc.map((item) => item.method), ['GET', 'POST']);
+    assert.deepEqual(mvc.map((item) => item.action), ['Detail', 'ValidateSend', 'Lookup', 'Lookup']);
+    assert.deepEqual(mvc.map((item) => item.method), ['GET', 'POST', 'ANY', 'ANY']);
     assert.equal(mvc[0].route, 'requests/{id}');
     assert.deepEqual(mvc[1].returns, [{ kind: 'partial_view', target: '_ConfirmSend' }]);
     assert.equal(mvc.some((item) => item.action === 'InternalCheck'), false);
     assert.equal(mvc.some((item) => item.action === 'PublicHelper'), false);
-    assert.equal(first.summary.candidates, 2);
-    assert.equal(first.summary.exact, 2);
+    assert.equal(mvc.some((item) => item.action === 'StaticHelper'), false);
+    const overloads = mvc.filter((item) => item.action === 'Lookup');
+    assert.equal(new Set(overloads.map((item) => item.id)).size, 2);
+    assert.equal(first.summary.candidates, 4);
+    assert.equal(first.summary.exact, 4);
 
     const secondIds = scanSurface(root).artifact.candidates
       .filter((item) => item.type === 'mvc_action')
       .map((item) => item.id);
     assert.deepEqual(firstIds, secondIds);
+
+    cpSync(join(fixturesRoot, 'mvc-basic'), renamedRoot, { recursive: true });
+    const renamedController = join(renamedRoot, 'Controllers', 'RequestsController.cs');
+    writeFileSync(
+      renamedController,
+      readFileSync(renamedController, 'utf8').replaceAll('PortalController', 'GatewayController'),
+    );
+    const renamed = scanSurface(renamedRoot).artifact.candidates
+      .filter((item) => item.type === 'mvc_action');
+    assert.deepEqual(
+      renamed.map(({ action, method, route, returns }) => ({ action, method, route, returns })),
+      mvc.map(({ action, method, route, returns }) => ({ action, method, route, returns })),
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
+    rmSync(renamedRoot, { recursive: true, force: true });
   }
 }
 
@@ -132,6 +158,7 @@ function compactSteps(candidate) {
 function testRazorAndJavaScriptFlows() {
   const a = scanFixture('ui-flow-a');
   const b = scanFixture('ui-flow-b');
+  const c = scanFixture('ui-flow-c');
   try {
     const uiA = a.artifact.candidates.filter((item) => item.type === 'ui_action');
     const send = uiA.find((item) => item.selector === '#btnSendRequest');
@@ -198,9 +225,31 @@ function testRazorAndJavaScriptFlows() {
 
     const closeModal = uiB.find((item) => item.selector === '#btnCloseModal');
     assert.equal(closeModal.disposition_hint, 'auxiliary');
+
+    const uiC = c.artifact.candidates.filter((item) => item.type === 'ui_action');
+    const open = uiC.find((item) => item.selector === '#btnOpenWorkflow');
+    assert.deepEqual(compactSteps(open), [
+      { kind: 'http', method: 'GET', target: '/area/Workflow/Check?id=' },
+      { kind: 'http_on_success', method: 'GET', target: '/area/Workflow/Validate?id={0}' },
+      { kind: 'partial_continuation', method: null, target: '_WorkflowBlocked' },
+      { kind: 'partial_continuation', method: null, target: '_WorkflowConfirmation' },
+      { kind: 'http_on_success', method: 'POST', target: '/area/Workflow/Complete' },
+    ]);
+    assert.equal(open.confidence, 'exact');
+
+    const confirm = uiC.find((item) => (
+      item.selector === '#btnConfirmWorkflow'
+      && item.file.endsWith('/Workflow/_WorkflowConfirmation.cshtml')
+    ));
+    assert.equal(confirm.label, 'Confirm workflow');
+    assert.deepEqual(compactSteps(confirm), [
+      { kind: 'http', method: 'POST', target: '/area/Workflow/Complete' },
+    ]);
+    assert.equal(confirm.confidence, 'exact');
   } finally {
     rmSync(a.root, { recursive: true, force: true });
     rmSync(b.root, { recursive: true, force: true });
+    rmSync(c.root, { recursive: true, force: true });
   }
 }
 
@@ -287,8 +336,61 @@ function testScannerIsIndependentFromFixtureNames() {
         .replaceAll('close', 'dismiss');
       writeFileSync(path, renamed);
     }
+    renameSync(
+      join(renamedRoot, 'Scripts', 'review-flow.js'),
+      join(renamedRoot, 'Scripts', 'audit-flow.js'),
+    );
     const renamedArtifact = scanSurface(renamedRoot).artifact;
     assert.deepEqual(flowShape(renamedArtifact), flowShape(original.artifact));
+  } finally {
+    rmSync(original.root, { recursive: true, force: true });
+    rmSync(renamedRoot, { recursive: true, force: true });
+  }
+}
+
+function testDynamicPartialFlowIsIndependentFromNames() {
+  const original = scanFixture('ui-flow-c');
+  const renamedRoot = mkdtempSync(join(tmpdir(), 'reversa-surface-dynamic-renamed-'));
+  try {
+    cpSync(join(fixturesRoot, 'ui-flow-c'), renamedRoot, { recursive: true });
+    const files = [
+      'Controllers/WorkflowController.cs',
+      'Scripts/unrelated.js',
+      'Views/Other/_WorkflowConfirmation.cshtml',
+      'Views/Workflow/Detail.cshtml',
+      'Views/Workflow/_WorkflowBlocked.cshtml',
+      'Views/Workflow/_WorkflowConfirmation.cshtml',
+    ];
+    for (const relativePath of files) {
+      const path = join(renamedRoot, relativePath);
+      writeFileSync(
+        path,
+        readFileSync(path, 'utf8')
+          .replaceAll('Workflow', 'Pipeline')
+          .replaceAll('workflow', 'pipeline'),
+      );
+    }
+    renameSync(
+      join(renamedRoot, 'Controllers', 'WorkflowController.cs'),
+      join(renamedRoot, 'Controllers', 'PipelineController.cs'),
+    );
+    renameSync(
+      join(renamedRoot, 'Views', 'Other', '_WorkflowConfirmation.cshtml'),
+      join(renamedRoot, 'Views', 'Other', '_PipelineConfirmation.cshtml'),
+    );
+    renameSync(
+      join(renamedRoot, 'Views', 'Workflow', '_WorkflowBlocked.cshtml'),
+      join(renamedRoot, 'Views', 'Workflow', '_PipelineBlocked.cshtml'),
+    );
+    renameSync(
+      join(renamedRoot, 'Views', 'Workflow', '_WorkflowConfirmation.cshtml'),
+      join(renamedRoot, 'Views', 'Workflow', '_PipelineConfirmation.cshtml'),
+    );
+    renameSync(
+      join(renamedRoot, 'Views', 'Workflow'),
+      join(renamedRoot, 'Views', 'Pipeline'),
+    );
+    assert.deepEqual(flowShape(scanSurface(renamedRoot).artifact), flowShape(original.artifact));
   } finally {
     rmSync(original.root, { recursive: true, force: true });
     rmSync(renamedRoot, { recursive: true, force: true });
@@ -356,5 +458,6 @@ testMvcActions();
 testRazorAndJavaScriptFlows();
 testScanSurfaceCommand();
 testScannerIsIndependentFromFixtureNames();
+testDynamicPartialFlowIsIndependentFromNames();
 testAgentAndDocumentationContracts();
 console.log('RESULTADO: ✓ nucleo do scanner de superficie');

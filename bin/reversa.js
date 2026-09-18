@@ -19,6 +19,7 @@ const commands = {
   'add-engine':       () => import('../lib/commands/add-engine.js'),
   'export-diagrams':  () => import('../lib/commands/export-diagrams.js'),
   'validate-analysis': () => import('../lib/commands/validate-analysis.js'),
+  'scan-surface':      () => import('../lib/commands/scan-surface.js'),
   'register-project':  () => import('../lib/commands/register-project.js'),
   'sync-projects':     () => import('../lib/commands/sync-projects.js'),
 };
@@ -42,6 +43,8 @@ if (!command || command === '--help' || command === '-h') {
                        Requer: npm install -g @mermaid-js/mermaid-cli
     validate-analysis  Valida evidências, progresso e conclusão da análise
                        Opções: --json
+    scan-surface       Descobre actions MVC e fluxos Razor/JavaScript
+                       Opções: --source=<caminho-relativo> --json
     register-project   Registra o projeto atual para sincronização pelo fork
     sync-projects      Sincroniza projetos registrados com origin/main do fork
 

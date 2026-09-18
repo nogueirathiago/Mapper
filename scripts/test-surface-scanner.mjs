@@ -12,10 +12,12 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolveSourceRoot, scanSurface } from '../lib/surface-scanner.js';
 
 const fixturesRoot = fileURLToPath(new URL('./fixtures/surface-scanner/', import.meta.url));
+const cli = fileURLToPath(new URL('../bin/reversa.js', import.meta.url));
 
 const makeRoot = () => {
   const root = mkdtempSync(join(tmpdir(), 'reversa-surface-'));
@@ -183,8 +185,60 @@ function testRazorAndJavaScriptFlows() {
   }
 }
 
+function testScanSurfaceCommand() {
+  const root = mkdtempSync(join(tmpdir(), 'reversa-surface-cli-'));
+  try {
+    mkdirSync(join(root, 'alternate'), { recursive: true });
+    writeFileSync(join(root, 'sample.js'), 'export const value = 1;\n');
+    writeFileSync(join(root, 'alternate', 'sample.js'), 'export const value = 2;\n');
+    const options = { cwd: root, encoding: 'utf8' };
+
+    const ok = spawnSync(process.execPath, [cli, 'scan-surface', '--json'], options);
+    assert.equal(ok.status, 0, ok.stderr);
+    const summary = JSON.parse(ok.stdout);
+    assert.deepEqual(Object.keys(summary).sort(), [
+      'candidates',
+      'exact',
+      'files_scanned',
+      'source_root',
+      'source_snapshot_id',
+      'unresolved',
+    ]);
+    assert.equal('artifact' in summary, false);
+
+    const override = spawnSync(
+      process.execPath,
+      [cli, 'scan-surface', '--source=alternate', '--json'],
+      options,
+    );
+    assert.equal(override.status, 0, override.stderr);
+    assert.equal(JSON.parse(override.stdout).source_root, 'alternate');
+
+    const fatal = spawnSync(
+      process.execPath,
+      [cli, 'scan-surface', '--source=../outside', '--json'],
+      options,
+    );
+    assert.equal(fatal.status, 1);
+    assert.equal(JSON.parse(fatal.stdout).error.code, 'source_path_outside_project');
+
+    const human = spawnSync(process.execPath, [cli, 'scan-surface'], options);
+    assert.equal(human.status, 0, human.stderr);
+    assert.match(human.stdout, /surface|superficie/i);
+    assert.doesNotMatch(human.stdout, /"candidates"\s*:/);
+
+    const unknown = spawnSync(process.execPath, [cli, 'scan-surface', '--wat'], options);
+    assert.equal(unknown.status, 1);
+    assert.match(unknown.stderr, /unknown_option/);
+    assert.doesNotMatch(unknown.stderr, /\n\s+at\s/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
 testSourcePrecedenceAndContainment();
 testDeterministicArtifactAndAtomicFailure();
 testMvcActions();
 testRazorAndJavaScriptFlows();
+testScanSurfaceCommand();
 console.log('RESULTADO: ✓ nucleo do scanner de superficie');

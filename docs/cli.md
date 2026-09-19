@@ -80,7 +80,7 @@ npx reversa scan-surface
 npx reversa scan-surface --source=<relative-path> --json
 ```
 
-Discovers ASP.NET MVC actions and Razor/JavaScript UI flows and writes `.reversa/context/surface-candidates.json`. `/reversa` runs this command automatically before the Scout without asking another question; manual use is only for diagnostics or re-execution. `--source` overrides the configured relative source root, and `--json` prints only the operational summary. Exit code `0` means the scan completed, including unresolved candidates; exit code `1` means a fatal configuration, access, or write failure.
+Discovers ASP.NET MVC actions, HTML/Razor controls, and JavaScript bindings (including events without a linkable HTML control) and writes `.reversa/context/surface-candidates.json`. The current artifact includes `file_coverage` to account for every processed file; historical artifacts remain accepted with a legacy-coverage warning. `/reversa` runs this command automatically before the Scout without asking another question; manual use is only for diagnostics or re-execution. `--source` overrides the configured relative source root, and `--json` prints only the operational summary. Exit code `0` means the scan completed, including unresolved candidates; exit code `1` means a fatal configuration, access, or write failure.
 
 ---
 

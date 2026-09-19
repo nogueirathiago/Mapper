@@ -80,7 +80,7 @@ npx reversa scan-surface
 npx reversa scan-surface --source=<caminho-relativo> --json
 ```
 
-Descobre actions ASP.NET MVC e fluxos Razor/JavaScript e grava `.reversa/context/surface-candidates.json`. O `/reversa` executa o comando automaticamente antes do Scout, sem fazer outra pergunta; o uso manual serve somente para diagnóstico ou reexecução. `--source` substitui a raiz relativa configurada, e `--json` imprime apenas o resumo operacional. O código de saída `0` indica scan concluído, inclusive com candidatos não resolvidos; `1` indica falha fatal de configuração, acesso ou escrita.
+Descobre actions ASP.NET MVC, controles HTML/Razor e bindings JavaScript (inclusive eventos sem controle HTML vinculável) e grava `.reversa/context/surface-candidates.json`. O artefato atual inclui `file_coverage` para comprovar o tratamento de cada arquivo; artefatos históricos permanecem aceitos com aviso de cobertura antiga. O `/reversa` executa o comando automaticamente antes do Scout, sem fazer outra pergunta; o uso manual serve somente para diagnóstico ou reexecução. `--source` substitui a raiz relativa configurada, e `--json` imprime apenas o resumo operacional. O código de saída `0` indica scan concluído, inclusive com candidatos não resolvidos; `1` indica falha fatal de configuração, acesso ou escrita.
 
 ---
 

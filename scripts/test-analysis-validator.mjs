@@ -49,9 +49,16 @@ function createWorkspace({
     };
     writeJson(join(root, '.reversa', 'context', 'surface-candidates.json'), {
       schema_version: 1,
+      scanner_revision: 6,
       source_root: 'source',
       source_snapshot: { kind: 'manifest_sha256', id: 'snapshot-1' },
       summary: { files_scanned: 1, candidates: 1, exact: 1, unresolved: 0 },
+      file_coverage: [{
+        file: sourceFile,
+        extension: sourceFile.endsWith('.js') ? '.js' : '.cs',
+        status: 'analyzed',
+        candidates: 1,
+      }],
       candidates: [{
         id: 'CAND-001',
         type: 'mvc_action',
@@ -250,6 +257,129 @@ function testAuxiliaryAndExcludedRequireReason() {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  }
+}
+
+function testFunctionalUiAuxiliaryRequiresTraceableEntries() {
+  const root = createWorkspace();
+  try {
+    mutateJson(join(root, '.reversa', 'context', 'surface-candidates.json'), (discovery) => {
+      discovery.candidates[0] = {
+        ...discovery.candidates[0],
+        type: 'ui_action',
+        control_kind: 'client_binding',
+        selector: '#approve',
+        steps: [{ kind: 'http', method: 'POST', target: '/Approval/Approve' }],
+      };
+    });
+    mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+      surface.surface_discovery.candidate_resolutions[0] = {
+        candidate_id: 'CAND-001',
+        disposition: 'auxiliary',
+        reason: 'Already represented elsewhere.',
+      };
+    });
+
+    let report = validateAnalysis(root);
+    assert.ok(report.errors.some((item) => item.code === 'functional_ui_auxiliary_unlinked'));
+
+    mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+      surface.surface_discovery.candidate_resolutions[0].related_entry_point_ids = ['ENTRY-001'];
+    });
+    report = validateAnalysis(root);
+    assert.equal(report.errors.some((item) => item.code === 'functional_ui_auxiliary_unlinked'), false);
+    assert.deepEqual(report.errors, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testVisualOnlyUiAuxiliaryDoesNotRequireBackendEntry() {
+  const root = createWorkspace();
+  try {
+    mutateJson(join(root, '.reversa', 'context', 'surface-candidates.json'), (discovery) => {
+      discovery.candidates[0] = {
+        ...discovery.candidates[0],
+        type: 'ui_action',
+        control_kind: 'button',
+        selector: '#close',
+        disposition_hint: 'auxiliary',
+        steps: [],
+      };
+    });
+    mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+      surface.surface_discovery.candidate_resolutions[0] = {
+        candidate_id: 'CAND-001', disposition: 'auxiliary', reason: 'Closes a local modal.',
+      };
+    });
+    const report = validateAnalysis(root);
+    assert.deepEqual(report.errors, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testLegacyScannerCoverageIsAcceptedWithWarning() {
+  for (const completionStatus of ['in_progress', 'reviewed_scope_complete']) {
+    const root = createWorkspace({ completionStatus });
+    try {
+      mutateJson(join(root, '.reversa', 'context', 'surface-candidates.json'), (discovery) => {
+        discovery.scanner_revision = 1;
+        delete discovery.file_coverage;
+      });
+      const report = validateAnalysis(root);
+      assert.equal(
+        report.errors.some((item) => item.code === 'surface_scanner_revision_outdated'),
+        false,
+      );
+      assert.ok(report.warnings.some((item) => item.code === 'surface_scanner_revision_outdated'));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+}
+
+function testLegacyFunctionalUiAuxiliaryRemainsCompatible() {
+  const root = createWorkspace();
+  try {
+    mutateJson(join(root, '.reversa', 'context', 'surface-candidates.json'), (discovery) => {
+      discovery.scanner_revision = 1;
+      delete discovery.file_coverage;
+      discovery.candidates[0] = {
+        ...discovery.candidates[0],
+        type: 'ui_action',
+        control_kind: 'client_binding',
+        selector: '#approve',
+        steps: [{ kind: 'http', method: 'POST', target: '/Approval/Approve' }],
+      };
+    });
+    mutateJson(join(root, '.reversa', 'context', 'surface.json'), (surface) => {
+      surface.surface_discovery.candidate_resolutions[0] = {
+        candidate_id: 'CAND-001',
+        disposition: 'auxiliary',
+        reason: 'Already represented under the historical contract.',
+      };
+    });
+
+    const report = validateAnalysis(root);
+    assert.equal(report.status, 'reviewed_scope_complete');
+    assert.deepEqual(report.errors, []);
+    assert.ok(report.warnings.some((item) => item.code === 'surface_scanner_revision_outdated'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testCurrentScannerRejectsInconsistentFileCoverage() {
+  const root = createWorkspace();
+  try {
+    mutateJson(join(root, '.reversa', 'context', 'surface-candidates.json'), (discovery) => {
+      discovery.file_coverage = [];
+    });
+    const report = validateAnalysis(root);
+    assert.ok(report.errors.some((item) => item.code === 'surface_file_coverage_invalid'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 }
 
@@ -457,6 +587,11 @@ testCandidateResolutionStaleFails();
 testCandidateResolutionDuplicateFails();
 testCandidateResolutionInvalidFails();
 testAuxiliaryAndExcludedRequireReason();
+testFunctionalUiAuxiliaryRequiresTraceableEntries();
+testVisualOnlyUiAuxiliaryDoesNotRequireBackendEntry();
+testLegacyScannerCoverageIsAcceptedWithWarning();
+testLegacyFunctionalUiAuxiliaryRemainsCompatible();
+testCurrentScannerRejectsInconsistentFileCoverage();
 testCandidatePromotionUnknownEntryFails();
 testCandidatePromotionUnmappedEntryFails();
 testSurfaceScanGapBlocksOnlyTotalConclusion();

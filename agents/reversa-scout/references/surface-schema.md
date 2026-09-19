@@ -48,6 +48,12 @@ Arquivo gerado pelo Scout. Usado pelos demais agentes como fonte de contexto est
       {
         "candidate_id": "CAND-UI-D4E5F6",
         "disposition": "auxiliary",
+        "related_entry_point_ids": ["ENTRY-001"],
+        "reason": "O mesmo fluxo já está representado pela entrada informada."
+      },
+      {
+        "candidate_id": "CAND-UI-VISUAL",
+        "disposition": "auxiliary",
         "reason": "O controle apenas fecha um painel visual da operação."
       },
       {
@@ -115,11 +121,13 @@ Todos os demais, inclua apenas o que for encontrado.
 Cada resolução contém `candidate_id`, `disposition` e `reason`. `disposition` aceita somente:
 
 - `promoted`: representa efeito funcional observável; exige `entry_point_id` existente e vinculado a uma operação;
-- `auxiliary`: participa da interface sem ser operação autônoma; exige justificativa;
+- `auxiliary`: participa da interface sem ser operação autônoma; exige justificativa. Para candidato `ui_action` funcional produzido pela revisão atual do scanner, exige `related_entry_point_ids` com uma ou mais entradas existentes e vinculadas a operações. Somente candidatos com `disposition_hint: "auxiliary"` podem omitir esse vínculo. Resoluções históricas permanecem válidas sem o campo e recebem aviso de cobertura antiga;
 - `excluded`: não representa comportamento funcional; exige justificativa;
 - `pending`: a evidência é insuficiente; permanece lacuna e bloqueia cobertura total.
 
 Uma resolução cujo candidato não existe no scan atual é obsoleta. O Scout não apaga silenciosamente candidatos não resolvidos, não inventa destinos e não usa a organização das specs para reduzir a cobertura.
+
+O artefato da revisão atual do scanner também contém `file_coverage`, com uma linha para cada arquivo considerado e seu estado `analyzed` ou `read_error`. Nesse contrato, cobertura total exige inventário consistente e ausência de `scan_gaps`. Artefatos históricos continuam válidos no contrato em que foram aprovados, com aviso de que não comprovam a cobertura integral atual. Bindings JavaScript sem um controle HTML vinculável permanecem candidatos `ui_action` do tipo `client_binding`; eles não podem ser descartados por não possuírem um botão Razor correspondente.
 
 ## Campo `organization_suggestion`
 

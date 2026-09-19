@@ -65,7 +65,7 @@ function testDeterministicArtifactAndAtomicFailure() {
     delete stale.scanner_revision;
     writeFileSync(first.artifactPath, `${JSON.stringify(stale)}\n`);
     const refreshed = scanSurface(root).artifact;
-    assert.equal(refreshed.scanner_revision, 1);
+    assert.equal(refreshed.scanner_revision, 7);
     assert.deepEqual(refreshed.candidates, []);
 
     writeFileSync(first.artifactPath, '{"sentinel":true}\n');
@@ -227,7 +227,9 @@ function testRazorAndJavaScriptFlows() {
     assert.equal(closeModal.disposition_hint, 'auxiliary');
 
     const uiC = c.artifact.candidates.filter((item) => item.type === 'ui_action');
-    const open = uiC.find((item) => item.selector === '#btnOpenWorkflow');
+    const open = uiC.find((item) => (
+      item.selector === '#btnOpenWorkflow' && item.file.endsWith('/Workflow/Detail.cshtml')
+    ));
     assert.deepEqual(compactSteps(open), [
       { kind: 'http', method: 'GET', target: '/area/Workflow/Check?id=' },
       { kind: 'http_on_success', method: 'GET', target: '/area/Workflow/Validate?id={0}' },
@@ -250,6 +252,147 @@ function testRazorAndJavaScriptFlows() {
     rmSync(a.root, { recursive: true, force: true });
     rmSync(b.root, { recursive: true, force: true });
     rmSync(c.root, { recursive: true, force: true });
+  }
+}
+
+function testEveryInteractiveBindingIsInventoried() {
+  const root = mkdtempSync(join(tmpdir(), 'reversa-surface-all-ui-'));
+  try {
+    mkdirSync(join(root, 'Views', 'Orders'), { recursive: true });
+    mkdirSync(join(root, 'Scripts'), { recursive: true });
+    writeFileSync(join(root, 'Views', 'Orders', 'Index.cshtml'), `
+<form id="requestForm" action="/Orders/Create" method="post">
+  <button type="button" class="btn js-save">Save</button>
+  <select id="status"><option>Open</option></select>
+  <button type="button" id="btnArchive">Archive</button>
+  <button type="button" id="btnInline" onclick="sendInline()">Inline</button>
+  <a id="dynamicLink" href="@Model.UrlArquivo">Download</a>
+</form>
+<script src="~/Scripts/orders.js"></script>
+`);
+    writeFileSync(join(root, 'Scripts', 'orders.js'), `
+$('.js-save').on('click', function () { $.post('/Orders/Save'); });
+$('#status').change(function () { $.get('/Orders/Options'); });
+$('#requestForm').submit(function () { $.post('/Orders/Submit'); });
+document.querySelector('#btnArchive').addEventListener('click', () => {
+  fetch('/Orders/Archive', { method: 'POST' });
+});
+$(document).on('click', '[data-action="approve"]', function () {
+  $.ajax({ url: '/Orders/Approve', type: 'POST' });
+});
+$('#orphanAction').on('change', function () { $.get('/Orders/Orphan'); });
+$('#namedAction').on('click', sendNamed);
+$('#razorTarget').click(function () {
+  $.post('@Url.Action("Save", "Orders", new { Area = "Admin" })');
+});
+$('#razorDouble').click(function () {
+  $.post("@Url.Action("Validate", "Orders")");
+});
+$('#companionAction').click(function () { sendCompanion(); });
+function sendInline() { $.post('/Orders/Inline'); }
+function sendNamed() { $.post('/Orders/Named'); }
+`);
+    writeFileSync(join(root, 'Scripts', 'orders.functions.js'), `
+function sendCompanion() { $.post('/Orders/Companion'); }
+`);
+
+    const artifact = scanSurface(root).artifact;
+    const ui = artifact.candidates.filter((item) => item.type === 'ui_action');
+    const bySelector = (selector) => ui.find((item) => item.selector === selector);
+
+    assert.deepEqual(compactSteps(bySelector('.js-save')), [
+      { kind: 'http', method: 'POST', target: '/Orders/Save' },
+    ]);
+    assert.deepEqual(compactSteps(bySelector('#status')), [
+      { kind: 'http', method: 'GET', target: '/Orders/Options' },
+    ]);
+    assert.deepEqual(compactSteps(bySelector('#requestForm')).slice(-1), [
+      { kind: 'http', method: 'POST', target: '/Orders/Submit' },
+    ]);
+    assert.deepEqual(compactSteps(bySelector('#btnArchive')), [
+      { kind: 'http', method: 'POST', target: '/Orders/Archive' },
+    ]);
+    assert.deepEqual(compactSteps(bySelector('[data-action="approve"]')), [
+      { kind: 'http', method: 'POST', target: '/Orders/Approve' },
+    ]);
+    assert.deepEqual(compactSteps(bySelector('#orphanAction')), [
+      { kind: 'http', method: 'GET', target: '/Orders/Orphan' },
+    ]);
+    assert.deepEqual(compactSteps(bySelector('#namedAction')), [
+      { kind: 'http', method: 'POST', target: '/Orders/Named' },
+    ]);
+    assert.deepEqual(compactSteps(bySelector('#razorTarget')), [
+      { kind: 'http', method: 'POST', target: '/Admin/Orders/Save' },
+    ]);
+    assert.deepEqual(compactSteps(bySelector('#razorDouble')), [
+      { kind: 'http', method: 'POST', target: '/Orders/Validate' },
+    ]);
+    assert.deepEqual(compactSteps(bySelector('#companionAction')), [
+      { kind: 'http', method: 'POST', target: '/Orders/Companion' },
+    ]);
+    const dynamicLink = bySelector('#dynamicLink');
+    assert.equal(dynamicLink.confidence, 'unresolved');
+    assert.deepEqual(compactSteps(dynamicLink), [
+      { kind: 'navigation', method: 'GET', target: null },
+    ]);
+    assert.equal(dynamicLink.steps[0].target_expression, '@Model.UrlArquivo');
+    assert.deepEqual(compactSteps(bySelector('#btnInline')), [
+      { kind: 'http', method: 'POST', target: '/Orders/Inline' },
+    ]);
+
+    assert.ok(Array.isArray(artifact.file_coverage));
+    assert.deepEqual(
+      artifact.file_coverage.map(({ file, status }) => ({ file, status })),
+      [
+        { file: 'Scripts/orders.functions.js', status: 'analyzed' },
+        { file: 'Scripts/orders.js', status: 'analyzed' },
+        { file: 'Views/Orders/Index.cshtml', status: 'analyzed' },
+      ],
+    );
+    assert.ok(artifact.file_coverage.every((item) => Number.isInteger(item.candidates)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testObservedJqueryLoadSink() {
+  const root = mkdtempSync(join(tmpdir(), 'reversa-surface-observed-sinks-'));
+  try {
+    mkdirSync(join(root, 'Views', 'Reviews'), { recursive: true });
+    writeFileSync(join(root, 'Views', 'Reviews', 'Index.cshtml'), `
+<button type="button" id="btnOpenReview">Open</button>
+<button type="button" id="btnDynamicReview">Dynamic</button>
+<button type="button" id="btnCommentedReview">Commented</button>
+<script>
+$(document).on('click', '#btnOpenReview', function () {
+  var rootUrl = window.location.protocol + '//' + window.location.host + '/';
+  var action = String.format(rootUrl + 'Admin/Reviews/Validate?id={0}', currentId);
+  $('#reviewDialog').dialog({ width: 600 }).load(action, function () {});
+});
+$('#btnDynamicReview').click(function () {
+  $('#reviewDialog').load(model.reviewUrl);
+});
+$('#btnCommentedReview').click(function () {
+  /* $('#reviewDialog').load('/Admin/Reviews/Commented'); */
+});
+</script>
+`);
+
+    const artifact = scanSurface(root).artifact;
+    const ui = artifact.candidates.filter((item) => item.type === 'ui_action');
+    const bySelector = (selector) => ui.find((item) => item.selector === selector);
+
+    assert.deepEqual(compactSteps(bySelector('#btnOpenReview')), [
+      { kind: 'http', method: 'GET', target: '/Admin/Reviews/Validate?id={0}' },
+    ]);
+    const dynamic = bySelector('#btnDynamicReview');
+    assert.deepEqual(compactSteps(dynamic), [
+      { kind: 'http', method: 'GET', target: null },
+    ]);
+    assert.equal(dynamic.steps[0].target_expression, 'model.reviewUrl');
+    assert.deepEqual(compactSteps(bySelector('#btnCommentedReview')), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 }
 
@@ -414,11 +557,13 @@ function testAgentAndDocumentationContracts() {
   );
   for (const token of [
     'surface-candidates.json',
+    'file_coverage',
     'candidate_resolutions',
     'promoted',
     'auxiliary',
     'excluded',
     'pending',
+    'related_entry_point_ids',
   ]) {
     assert.ok(scout.includes(token), `Scout sem contrato ${token}`);
   }
@@ -430,6 +575,8 @@ function testAgentAndDocumentationContracts() {
   assert.match(schema, /surface_discovery/);
   assert.match(schema, /scan_snapshot_id/);
   assert.match(schema, /candidate_resolutions/);
+  assert.match(schema, /file_coverage/);
+  assert.match(schema, /related_entry_point_ids/);
 
   const reviewer = readFileSync(
     new URL('../agents/reversa-reviewer/SKILL.md', import.meta.url),
@@ -439,6 +586,8 @@ function testAgentAndDocumentationContracts() {
     reviewer,
     /novos, alterados, pendentes, contraditórios|new, changed, pending, contradictory/i,
   );
+  assert.match(reviewer, /file_coverage/);
+  assert.match(reviewer, /related_entry_point_ids/);
 
   const config = readFileSync(new URL('../templates/config.toml', import.meta.url), 'utf8');
   assert.match(config, /\[analysis][\s\S]*source_root\s*=\s*"\."/);
@@ -456,6 +605,8 @@ testDeterministicArtifactAndAtomicFailure();
 testUnreadableFileBecomesScanGap();
 testMvcActions();
 testRazorAndJavaScriptFlows();
+testEveryInteractiveBindingIsInventoried();
+testObservedJqueryLoadSink();
 testScanSurfaceCommand();
 testScannerIsIndependentFromFixtureNames();
 testDynamicPartialFlowIsIndependentFromNames();

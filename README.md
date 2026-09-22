@@ -422,6 +422,7 @@ Every statement in the specs is marked with:
 npx reversa install      # Install Reversa in the project (all agents)
 npx reversa status       # Show current analysis state
 npx reversa validate-analysis --json # Validate behavioral evidence and completion state
+npx reversa scan-pr --base=<commit-base-do-PR> --json # Structural delta for an ordinary PR
 npx reversa update       # Update everything to the latest version (all agents)
 npx reversa add-engine   # Add support for a new engine
 npx reversa uninstall    # Remove Reversa from the project
@@ -430,6 +431,7 @@ npx reversa uninstall    # Remove Reversa from the project
 The `update` command detects files you modified via SHA-256 and never overwrites customizations.
 The `uninstall` command removes only files created by Reversa — nothing from the legacy project is touched.
 `validate-analysis` checks evidence references, operation progress, investigated blockers, and completion consistency. It does not certify the semantic correctness of a rule.
+`scan-pr` requires the PR head checked out in a clean worktree. It reports added, changed and possibly removed files, SHA-256 values, affected surface candidates and explicit gaps. It does not approve rule changes or infer a retired rule from a missing file.
 
 ---
 

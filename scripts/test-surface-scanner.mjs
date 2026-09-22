@@ -50,7 +50,10 @@ function testDeterministicArtifactAndAtomicFailure() {
   const root = makeRoot();
   try {
     writeFileSync(join(root, 'user', 'sample.js'), 'export const value = 1;\n');
+    mkdirSync(join(root, 'user', '.agents'));
+    writeFileSync(join(root, 'user', '.agents', 'skill.js'), 'export const ignored = true;\n');
     const first = scanSurface(root);
+    assert.equal(first.artifact.summary.files_scanned, 1);
     const firstBytes = readFileSync(first.artifactPath);
     const second = scanSurface(root);
 
@@ -65,7 +68,7 @@ function testDeterministicArtifactAndAtomicFailure() {
     delete stale.scanner_revision;
     writeFileSync(first.artifactPath, `${JSON.stringify(stale)}\n`);
     const refreshed = scanSurface(root).artifact;
-    assert.equal(refreshed.scanner_revision, 7);
+    assert.equal(refreshed.scanner_revision, 8);
     assert.deepEqual(refreshed.candidates, []);
 
     writeFileSync(first.artifactPath, '{"sentinel":true}\n');

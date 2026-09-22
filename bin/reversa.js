@@ -20,6 +20,7 @@ const commands = {
   'export-diagrams':  () => import('../lib/commands/export-diagrams.js'),
   'validate-analysis': () => import('../lib/commands/validate-analysis.js'),
   'scan-surface':      () => import('../lib/commands/scan-surface.js'),
+  'scan-pr':           () => import('../lib/commands/scan-pr.js'),
   'register-project':  () => import('../lib/commands/register-project.js'),
   'sync-projects':     () => import('../lib/commands/sync-projects.js'),
 };
@@ -45,6 +46,8 @@ if (!command || command === '--help' || command === '-h') {
                        Opções: --json
     scan-surface       Descobre actions MVC e fluxos Razor/JavaScript
                        Opções: --source=<caminho-relativo> --json
+    scan-pr            Evidencia o delta de um PR comum para revisão Reversa
+                       Opções: --base=<commit> [--head=<commit>] [--source=<caminho>] --json
     register-project   Registra o projeto atual para sincronização pelo fork
     sync-projects      Sincroniza projetos registrados com origin/main do fork
 

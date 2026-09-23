@@ -68,7 +68,7 @@ function testDeterministicArtifactAndAtomicFailure() {
     delete stale.scanner_revision;
     writeFileSync(first.artifactPath, `${JSON.stringify(stale)}\n`);
     const refreshed = scanSurface(root).artifact;
-    assert.equal(refreshed.scanner_revision, 8);
+    assert.equal(refreshed.scanner_revision, 9);
     assert.deepEqual(refreshed.candidates, []);
 
     writeFileSync(first.artifactPath, '{"sentinel":true}\n');
@@ -128,6 +128,12 @@ function testMvcActions() {
       .filter((item) => item.type === 'mvc_action')
       .map((item) => item.id);
     assert.deepEqual(firstIds, secondIds);
+
+    writeFileSync(join(root, 'Controllers', 'ValoresAreasLimpezaController.cs'),
+      'public class ValoresAreasLimpezaController : SedControllerNovo { public ActionResult Index() { return View(); } }\n');
+    const inherited = scanSurface(root).artifact.candidates.filter((item) => item.type === 'mvc_action');
+    assert.deepEqual(inherited.filter((item) => item.controller === 'ValoresAreasLimpeza')
+      .map((item) => item.action), ['Index']);
 
     cpSync(join(fixturesRoot, 'mvc-basic'), renamedRoot, { recursive: true });
     const renamedController = join(renamedRoot, 'Controllers', 'RequestsController.cs');
